@@ -27,3 +27,17 @@ Invalid schemas raise `PowerFlowError` with a stable code. Numerical failures re
 ## MATLAB oracle
 
 MATLAB is a behavioral oracle, not mathematical authority. If its behavior conflicts with an authoritative sourced equation, the differential gate stops and records a defect instead of copying the discrepancy.
+
+## Classical SSSA
+
+- One coherent classical machine is formed per online generator bus, preserving
+  source bus-row order rather than PF state order.
+- Cases without machine data use the documented defaults `H=5 s`, `D=0`, and
+  `Xdp=0.3 pu`; cases with machine data aggregate by external bus ID.
+- Constant-power loads are converted to operating-point admittances before the
+  internal-voltage network solve.
+- `K_Pe_delta` uses an absolute central-difference step of `1e-6 rad`.
+- Full states use machine-block order `[delta_1, omega_1, ...]`.
+- COI reduction removes the common angle and speed modes using inertia weights.
+- Reduced roots are classified with real-part tolerance `1e-7` as unstable,
+  stable, or marginal.

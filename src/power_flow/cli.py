@@ -11,9 +11,9 @@ from power_flow.contracts import PowerFlowError
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Project-owned AC power-flow solver")
-    parser.add_argument("--analysis", default="pf", help="Analysis ID (currently: pf)")
-    parser.add_argument("--case", default="ieee5", help="Case ID (ieee5 or ieee14)")
+    parser = argparse.ArgumentParser(description="Project-owned power-system analysis")
+    parser.add_argument("--analysis", default="pf", choices=("pf", "sssa", "ts", "ibr"))
+    parser.add_argument("--case", default="ieee5", help="Active network case ID")
     parser.add_argument("--tolerance", type=float, default=1e-6)
     parser.add_argument("--max-iter", type=int)
     parser.add_argument(
@@ -29,14 +29,17 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
-        options = {
-            "tolerance": args.tolerance,
-            "enforce_q_limits": not args.no_q_limits,
-            "pf_method": args.method,
-            "acceleration": args.acceleration,
-        }
-        if args.max_iter is not None:
-            options["max_iter"] = args.max_iter
+        if args.analysis == "pf":
+            options = {
+                "tolerance": args.tolerance,
+                "enforce_q_limits": not args.no_q_limits,
+                "pf_method": args.method,
+                "acceleration": args.acceleration,
+            }
+            if args.max_iter is not None:
+                options["max_iter"] = args.max_iter
+        else:
+            options = {"model": "classical"} if args.analysis == "sssa" else {}
         result = solve_case(
             args.analysis,
             args.case,
@@ -46,7 +49,7 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps({"error": error.code, "message": str(error)}), file=sys.stderr)
         return 2
     print(json.dumps(result.summary(), indent=args.indent, allow_nan=False))
-    return 0 if result.converged else 1
+    return 0 if not hasattr(result, "converged") or result.converged else 1
 
 
 if __name__ == "__main__":

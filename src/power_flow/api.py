@@ -14,17 +14,19 @@ from power_flow.pf import (
     solve_gauss_seidel,
     solve_newton_raphson,
 )
+from power_flow.sssa import solve_classical_sssa
+from power_flow.sssa.classical import SssaResult
 
 
 ACTIVE_ANALYSES = ("pf", "sssa", "ts", "ibr")
-IMPLEMENTED_ANALYSES = ("pf",)
+IMPLEMENTED_ANALYSES = ("pf", "sssa")
 
 
 def solve_case(
     analysis: str,
     case: str,
     options: Mapping[str, Any] | None = None,
-) -> PowerFlowResult:
+) -> PowerFlowResult | SssaResult:
     analysis_id = analysis.strip().lower()
     if analysis_id not in ACTIVE_ANALYSES:
         raise PowerFlowError(
@@ -37,6 +39,8 @@ def solve_case(
             f"Analysis {analysis_id!r} is active in the source baseline but not implemented yet.",
         )
     power_case = load_case(case)
+    if analysis_id == "sssa":
+        return solve_classical_sssa(power_case, options)
     resolved = PowerFlowOptions.from_mapping(options)
     solvers = {
         "newton_raphson": solve_newton_raphson,

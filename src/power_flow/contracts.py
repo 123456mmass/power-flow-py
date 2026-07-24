@@ -105,6 +105,7 @@ class PowerCase:
     line_data: FloatArray
     schema_version: str = POWER_CASE_SCHEMA
     reference: Mapping[str, Any] = field(default_factory=dict, repr=False, compare=False)
+    dynamic_data: Mapping[str, Any] = field(default_factory=dict, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         if not self.system_name:
@@ -117,6 +118,7 @@ class PowerCase:
         object.__setattr__(self, "bus_data", _standardize_bus_data(self.bus_data))
         object.__setattr__(self, "line_data", _standardize_line_data(self.line_data))
         object.__setattr__(self, "reference", MappingProxyType(dict(self.reference)))
+        object.__setattr__(self, "dynamic_data", MappingProxyType(dict(self.dynamic_data)))
 
     def with_bus_data(self, bus_data: Any) -> "PowerCase":
         return replace(self, bus_data=bus_data)

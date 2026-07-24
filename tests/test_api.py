@@ -21,7 +21,7 @@ def test_method_specific_default_iteration_budget() -> None:
 
 def test_unimplemented_active_analysis_fails_closed() -> None:
     with pytest.raises(PowerFlowError) as caught:
-        solve_case("sssa", "ieee5")
+        solve_case("ts", "ieee5")
     assert caught.value.code == "analysis_not_implemented"
 
 
