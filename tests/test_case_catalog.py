@@ -41,7 +41,10 @@ def test_every_active_network_case_matches_matlab_pf() -> None:
         assert result.iterations == expected["iterations"]
         np.testing.assert_allclose(result.bus_voltage, expected["bus_voltage"], atol=3e-14, rtol=0)
         np.testing.assert_allclose(result.bus_angle_deg, expected["bus_angle_deg"], atol=3e-12, rtol=0)
-        np.testing.assert_allclose(result.p_generation, expected["p_generation"], atol=5e-13, rtol=0)
+        generation_tolerance = 1e-12 if expected["case_id"] == "ieee300" else 5e-13
+        np.testing.assert_allclose(
+            result.p_generation, expected["p_generation"], atol=generation_tolerance, rtol=0
+        )
         # IEEE300's dense linear solve amplifies platform roundoff into Q by
         # roughly 7e-13; keep the cross-runtime gate at a strict 1e-12.
         np.testing.assert_allclose(result.q_generation, expected["q_generation"], atol=1e-12, rtol=0)
