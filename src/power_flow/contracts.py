@@ -129,6 +129,8 @@ class PowerFlowOptions:
     enforce_q_limits: bool = True
     q_limit_tolerance: float = 1e-6
     max_q_limit_switches: int = 20
+    pf_method: str = "newton_raphson"
+    acceleration: float = 1.4
 
     def __post_init__(self) -> None:
         if self.max_iter < 1:
@@ -145,6 +147,15 @@ class PowerFlowOptions:
                 "q_limit_tolerance",
                 "q_limit_tolerance must be finite and non-negative.",
             )
+        canonical = self.pf_method.strip().lower() if isinstance(self.pf_method, str) else ""
+        if canonical not in {"newton_raphson", "gauss_seidel", "fdpf_xb", "fdpf_bx", "bfs"}:
+            raise PowerFlowError(
+                "unknown_pf_method",
+                "pf_method must be one of newton_raphson, gauss_seidel, fdpf_xb, fdpf_bx, bfs.",
+            )
+        object.__setattr__(self, "pf_method", canonical)
+        if not np.isfinite(self.acceleration) or self.acceleration <= 0:
+            raise PowerFlowError("acceleration", "acceleration must be finite and positive.")
 
     @classmethod
     def from_mapping(cls, value: Mapping[str, Any] | None) -> "PowerFlowOptions":
@@ -154,7 +165,17 @@ class PowerFlowOptions:
         unknown = sorted(set(value) - allowed)
         if unknown:
             raise PowerFlowError("unknown_options", f"Unknown PF options: {', '.join(unknown)}")
-        return cls(**dict(value))
+        resolved = dict(value)
+        if "max_iter" not in resolved:
+            method = str(resolved.get("pf_method", "newton_raphson")).strip().lower()
+            resolved["max_iter"] = {
+                "newton_raphson": 20,
+                "gauss_seidel": 200,
+                "fdpf_xb": 50,
+                "fdpf_bx": 50,
+                "bfs": 100,
+            }.get(method, 20)
+        return cls(**resolved)
 
 
 @dataclass(frozen=True, slots=True)

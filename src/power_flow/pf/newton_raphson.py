@@ -100,6 +100,12 @@ def _build_result(
                 "ref_bus_ids": model.external_bus_ids[model.ref].tolist(),
                 "pv_bus_ids": model.external_bus_ids[model.pv].tolist(),
                 "pq_bus_ids": model.external_bus_ids[model.pq].tolist(),
+                "method_requested": "newton_raphson",
+                "method_executed": "newton_raphson",
+                "method_source": "in-house canonical Newton-Raphson",
+                "capability": "production",
+                "fallback_used": False,
+                "full_ac_mismatch": float(max_mismatch),
             }
         ),
     )

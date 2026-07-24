@@ -24,9 +24,15 @@ pf_init_paths();
 [~,git_status]=system(sprintf('git -C "%s" status --short',source_root));
 
 opt=struct('verbose',false,'plot_results',false,'tolerance',1e-10, ...
-    'max_iter',50,'enforce_q_limits',true);
+    'max_iter',200,'enforce_q_limits',false,'acceleration',1.4);
 cases_out=[one_case('ieee5',cases.case_ieee5bus(),opt); ...
            one_case('ieee14',cases.case_ieee14bus(),opt)];
+methods_out=[method_case('ieee5','gauss_seidel',cases.case_ieee5bus(),opt); ...
+             method_case('ieee5','fdpf_xb',cases.case_ieee5bus(),opt); ...
+             method_case('ieee5','fdpf_bx',cases.case_ieee5bus(),opt); ...
+             method_case('ieee14','fdpf_xb',cases.case_ieee14bus(),opt); ...
+             method_case('three_bus_radial','bfs',three_bus_radial(),opt); ...
+             method_case('three_bus_radial','newton_raphson',three_bus_radial(),opt)];
 
 payload=struct();
 payload.schema='power-flow-py/matlab-pf-oracle/1.0';
@@ -37,6 +43,7 @@ payload.source_git_commit=strtrim(commit);
 payload.source_git_status=git_status;
 payload.options=opt;
 payload.cases=cases_out;
+payload.methods=methods_out;
 
 parent=fileparts(output_file);
 if ~exist(parent,'dir'), mkdir(parent); end
@@ -45,6 +52,33 @@ if fid<0, error('export_pf_oracle:open','Cannot open %s.',output_file); end
 file_cleanup=onCleanup(@()fclose(fid)); %#ok<NASGU>
 fprintf(fid,'%s',jsonencode(payload,'PrettyPrint',true));
 fprintf('Wrote MATLAB PF oracle: %s\n',output_file);
+end
+
+function out=method_case(case_id,method,case_data,opt)
+switch method
+    case 'newton_raphson', r=pfsolver.powerflow_newton_raphson(case_data,opt);
+    case 'gauss_seidel', r=pfsolver.powerflow_gauss_seidel(case_data,opt);
+    case 'fdpf_xb', r=pfsolver.powerflow_fdpf_xb(case_data,opt);
+    case 'fdpf_bx', r=pfsolver.powerflow_fdpf_bx(case_data,opt);
+    case 'bfs', r=pfsolver.powerflow_bfs(case_data,opt);
+    otherwise, error('export_pf_oracle:method','Unknown method %s.',method);
+end
+out=struct('case_id',case_id,'method',method,'converged',logical(r.converged), ...
+    'iterations',r.iterations,'max_mismatch',r.mismatch_history(end), ...
+    'bus_voltage',r.bus_voltage(:).','bus_angle_deg',r.bus_angle_deg(:).', ...
+    'p_generation',r.P_generation(:).','q_generation',r.Q_generation(:).', ...
+    'p_loss_total',r.P_loss_total,'q_loss_total',r.Q_loss_total, ...
+    'mismatch_history',r.mismatch_history(:).');
+end
+
+function c=three_bus_radial()
+c.system_name='three_bus_radial';
+c.base_values=struct('S_base_MVA',100,'V_base_kV',230,'frequency_Hz',60);
+c.bus_data=[1,1,1.06,0,0,0,0,0,0,0,0,0; ...
+            2,3,1.00,0,0,0,0.3,0.1,0,0,0,0; ...
+            3,3,1.00,0,0,0,0.4,0.15,0,0,0,0];
+c.line_data=[1,2,0.01,0.1,0,1,0; 2,3,0.02,0.15,0,1,0];
+c.mpc=struct();
 end
 
 function out=one_case(case_id,case_data,opt)

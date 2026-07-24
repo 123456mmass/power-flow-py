@@ -7,7 +7,13 @@ from typing import Any
 
 from power_flow.cases import load_case
 from power_flow.contracts import PowerFlowError, PowerFlowOptions, PowerFlowResult
-from power_flow.pf import solve_newton_raphson
+from power_flow.pf import (
+    solve_bfs,
+    solve_fdpf_bx,
+    solve_fdpf_xb,
+    solve_gauss_seidel,
+    solve_newton_raphson,
+)
 
 
 ACTIVE_ANALYSES = ("pf", "sssa", "ts", "ibr")
@@ -31,4 +37,12 @@ def solve_case(
             f"Analysis {analysis_id!r} is active in the source baseline but not implemented yet.",
         )
     power_case = load_case(case)
-    return solve_newton_raphson(power_case, PowerFlowOptions.from_mapping(options))
+    resolved = PowerFlowOptions.from_mapping(options)
+    solvers = {
+        "newton_raphson": solve_newton_raphson,
+        "gauss_seidel": solve_gauss_seidel,
+        "fdpf_xb": solve_fdpf_xb,
+        "fdpf_bx": solve_fdpf_bx,
+        "bfs": solve_bfs,
+    }
+    return solvers[resolved.pf_method](power_case, resolved)

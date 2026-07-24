@@ -13,6 +13,12 @@ def test_public_api_dispatches_pf() -> None:
     assert result.converged
 
 
+def test_method_specific_default_iteration_budget() -> None:
+    result = solve_case("pf", "ieee5", {"pf_method": "gauss_seidel", "tolerance": 1e-10})
+    assert result.converged
+    assert result.iterations == 25
+
+
 def test_unimplemented_active_analysis_fails_closed() -> None:
     with pytest.raises(PowerFlowError) as caught:
         solve_case("sssa", "ieee5")

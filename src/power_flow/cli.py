@@ -15,7 +15,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--analysis", default="pf", help="Analysis ID (currently: pf)")
     parser.add_argument("--case", default="ieee5", help="Case ID (ieee5 or ieee14)")
     parser.add_argument("--tolerance", type=float, default=1e-6)
-    parser.add_argument("--max-iter", type=int, default=20)
+    parser.add_argument("--max-iter", type=int)
+    parser.add_argument(
+        "--method", default="newton_raphson",
+        choices=("newton_raphson", "gauss_seidel", "fdpf_xb", "fdpf_bx", "bfs"),
+    )
+    parser.add_argument("--acceleration", type=float, default=1.4)
     parser.add_argument("--no-q-limits", action="store_true")
     parser.add_argument("--indent", type=int, default=2)
     return parser
@@ -24,14 +29,18 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
+        options = {
+            "tolerance": args.tolerance,
+            "enforce_q_limits": not args.no_q_limits,
+            "pf_method": args.method,
+            "acceleration": args.acceleration,
+        }
+        if args.max_iter is not None:
+            options["max_iter"] = args.max_iter
         result = solve_case(
             args.analysis,
             args.case,
-            {
-                "tolerance": args.tolerance,
-                "max_iter": args.max_iter,
-                "enforce_q_limits": not args.no_q_limits,
-            },
+            options,
         )
     except PowerFlowError as error:
         print(json.dumps({"error": error.code, "message": str(error)}), file=sys.stderr)

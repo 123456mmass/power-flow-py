@@ -24,7 +24,7 @@ The source MATLAB baseline exposes four stable analysis IDs: `pf`, `sssa`, `ts`,
 
 | Analysis | Status |
 |---|---|
-| PF | IEEE 5/14-bus Newton-Raphson implemented |
+| PF | NR, GS, FDPF-XB/BX implemented; Phase-1 radial BFS capability-gated |
 | SSSA | Planned |
 | TS | Planned |
 | IBR | Planned |

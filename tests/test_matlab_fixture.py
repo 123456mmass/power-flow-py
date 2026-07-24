@@ -5,7 +5,8 @@ from pathlib import Path
 
 import numpy as np
 
-from power_flow import PowerFlowOptions, solve_case
+from power_flow import BaseValues, PowerCase, PowerFlowOptions, solve_case
+from power_flow.pf import solve_bfs, solve_newton_raphson
 from power_flow.network import build_jacobian, calculate_mismatch, initial_state, prepare_case
 from power_flow.cases import load_case
 
@@ -52,3 +53,33 @@ def test_frozen_matlab_pf_fixture() -> None:
         jacobian = build_jacobian(voltage, angle, p_calc, q_calc, model)
         np.testing.assert_allclose(mismatch, expected["initial_mismatch"], atol=2e-13, rtol=0)
         np.testing.assert_allclose(jacobian, expected["initial_jacobian"], atol=2e-12, rtol=0)
+
+
+def test_frozen_matlab_multi_method_fixture() -> None:
+    payload = json.loads(FIXTURE.read_text(encoding="utf-8"))
+    radial = PowerCase(
+        "three_bus_radial", BaseValues(100, 230, 60),
+        [[1, 1, 1.06, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+         [2, 3, 1.00, 0, 0, 0, 0.3, 0.1, 0, 0, 0, 0],
+         [3, 3, 1.00, 0, 0, 0, 0.4, 0.15, 0, 0, 0, 0]],
+        [[1, 2, 0.01, 0.1, 0, 1, 0], [2, 3, 0.02, 0.15, 0, 1, 0]],
+    )
+    raw_options = payload["options"]
+    options = {
+        "tolerance": raw_options["tolerance"], "max_iter": raw_options["max_iter"],
+        "enforce_q_limits": raw_options["enforce_q_limits"],
+        "acceleration": raw_options["acceleration"],
+    }
+    for expected in payload["methods"]:
+        method = expected["method"]
+        if expected["case_id"] == "three_bus_radial":
+            typed = PowerFlowOptions.from_mapping({**options, "pf_method": method})
+            result = solve_bfs(radial, typed) if method == "bfs" else solve_newton_raphson(radial, typed)
+        else:
+            result = solve_case("pf", expected["case_id"], {**options, "pf_method": method})
+        assert result.converged == expected["converged"]
+        assert result.iterations == expected["iterations"]
+        np.testing.assert_allclose(result.bus_voltage, expected["bus_voltage"], atol=2e-12, rtol=0)
+        np.testing.assert_allclose(result.bus_angle_deg, expected["bus_angle_deg"], atol=2e-10, rtol=0)
+        np.testing.assert_allclose(result.mismatch_history, expected["mismatch_history"], atol=2e-12, rtol=0)
+        assert abs(result.p_loss_total - expected["p_loss_total"]) < 2e-12
