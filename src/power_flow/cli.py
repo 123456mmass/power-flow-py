@@ -26,7 +26,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--t-end", type=float, default=1.0)
     parser.add_argument("--dt", type=float, default=0.01)
     parser.add_argument("--fault-bus", type=int)
-    parser.add_argument("--ibr-product", default="full", choices=("pf", "sssa", "ts", "full"))
+    parser.add_argument(
+        "--ibr-product", default="full",
+        choices=("pf", "sssa", "ts", "full", "sssa_load_sweep"),
+    )
+    parser.add_argument("--ibr-load-percentages", type=float, nargs="+")
     parser.add_argument("--ibr-fault-on", type=float, default=0.0)
     parser.add_argument("--ibr-fault-clear", type=float, default=0.0)
     parser.add_argument("--ibr-fault-reactance", type=float, default=0.10)
@@ -68,13 +72,18 @@ def main(argv: list[str] | None = None) -> int:
             if args.model is not None:
                 options["model"] = args.model
         else:
-            options = {
-                "ibr_analysis": args.ibr_product, "t_end": args.t_end, "dt": args.dt,
-                "fault_on": args.ibr_fault_on, "fault_clear": args.ibr_fault_clear,
-                "fault_impedance": 1j * args.ibr_fault_reactance,
-                "step_on": args.ibr_step_on, "step_dv": args.ibr_step_dv,
-                "step_dphase_deg": args.ibr_step_dphase_deg,
-            }
+            if args.ibr_product == "sssa_load_sweep":
+                options = {"ibr_analysis": args.ibr_product}
+                if args.ibr_load_percentages is not None:
+                    options["sssa_load_percentages"] = tuple(args.ibr_load_percentages)
+            else:
+                options = {
+                    "ibr_analysis": args.ibr_product, "t_end": args.t_end, "dt": args.dt,
+                    "fault_on": args.ibr_fault_on, "fault_clear": args.ibr_fault_clear,
+                    "fault_impedance": 1j * args.ibr_fault_reactance,
+                    "step_on": args.ibr_step_on, "step_dv": args.ibr_step_dv,
+                    "step_dphase_deg": args.ibr_step_dphase_deg,
+                }
         result = solve_case(
             args.analysis,
             args.case,

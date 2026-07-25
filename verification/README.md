@@ -35,3 +35,5 @@ implicit-trapezoidal equilibrium/perturbation trajectories.
 spectrum, and nonlinear TDS evidence for the no-PLL/no-AVR/no-PSS Sakimoto VSM.
 `export_ibr_smib_events_oracle.m` freezes PCC shunt-fault and permanent
 infinite-bus voltage/phase-step trajectories for all five supported SMIB models.
+`export_ibr_loaded_sweep_oracle.m` freezes coupled equilibria, DAE blocks, Schur
+matrices, and spectra at five loaded-SMIB sweep points for GFL-RMS10 and GFM no-PLL.

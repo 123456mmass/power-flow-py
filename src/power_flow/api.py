@@ -7,7 +7,7 @@ from typing import Any
 
 from power_flow.cases import load_case
 from power_flow.contracts import PowerFlowError, PowerFlowOptions, PowerFlowResult
-from power_flow.ibr import IbrResult, solve_reduced6_smib
+from power_flow.ibr import IbrResult, LoadedIbrResult, solve_loaded_smib_sweep, solve_reduced6_smib
 from power_flow.pf import (
     solve_bfs,
     solve_fdpf_bx,
@@ -36,7 +36,7 @@ def solve_case(
     analysis: str,
     case: str,
     options: Mapping[str, Any] | None = None,
-) -> PowerFlowResult | SssaResult | Emf6SssaResult | PadiyarSssaResult | TsResult | Emf6TsResult | PadiyarTsResult | IbrResult:
+) -> PowerFlowResult | SssaResult | Emf6SssaResult | PadiyarSssaResult | TsResult | Emf6TsResult | PadiyarTsResult | IbrResult | LoadedIbrResult:
     analysis_id = analysis.strip().lower()
     if analysis_id not in ACTIVE_ANALYSES:
         raise PowerFlowError(
@@ -49,6 +49,8 @@ def solve_case(
             f"Analysis {analysis_id!r} is active in the source baseline but not implemented yet.",
         )
     if analysis_id == "ibr":
+        if case.strip().lower() in {"gfl_rms10_loaded_smib", "gfm_no_pll_loaded_smib"}:
+            return solve_loaded_smib_sweep(case, options)
         return solve_reduced6_smib(case, options)
     power_case = load_case(case)
     if analysis_id == "sssa":

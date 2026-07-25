@@ -27,4 +27,4 @@ The source MATLAB baseline exposes four stable analysis IDs: `pf`, `sssa`, `ts`,
 | PF | 14-case catalog; NR, GS, FDPF-XB/BX; Phase-1 radial BFS capability-gated |
 | SSSA | Classical on all 14 cases; Kundur EMF6 and Padiyar model-1.1 AVR defaults; manual detailed variants; MATLAB parity |
 | TS | Classical fixed-step trapezoidal/BE and RK4 diagnostic; Kundur EMF6 and Padiyar model-1.1 fixed trapezoidal; fault events |
-| IBR | Reduced-six GFL/GFM, GFL-RMS10, GFM-VSG no-PLL, and nine-state Sakimoto VSM SMIB PF-equilibrium, Schur SSSA, implicit-trapezoidal TDS, PCC shunt faults, and infinite-bus voltage/phase steps; remaining cases fail closed |
+| IBR | Reduced-six GFL/GFM, GFL-RMS10, GFM-VSG no-PLL, and nine-state Sakimoto VSM SMIB PF-equilibrium, Schur SSSA, implicit-trapezoidal TDS, PCC shunt faults, and infinite-bus voltage/phase steps; loaded GFL-RMS10/GFM-no-PLL SMIB SSSA load sweeps; remaining cases fail closed |

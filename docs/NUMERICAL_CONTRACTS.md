@@ -155,3 +155,16 @@ MATLAB is a behavioral oracle, not mathematical authority. If its behavior confl
 - RMS10 balanced LVRT, modulation limits, and directional anti-windup, plus the
   Sakimoto limiter anti-windup, remain active during faults. Voltage-domain or
   Newton failures propagate as fail-closed errors; there is no silent fallback.
+
+## Loaded-SMIB SSSA sweep
+
+- `gfl_rms10_loaded_smib` and `gfm_no_pll_loaded_smib` place a constant-power
+  shunt load at the converter terminal behind `Z_line=0.02+j0.20 pu`.
+- The load scales at constant power factor; converter references remain fixed
+  and the infinite bus absorbs incremental line flow. Every point is solved
+  independently by coupled Newton with backtracking.
+- SSSA includes the derivative of `conj((P_load+jQ_load)/V)` in the algebraic
+  KCL and uses the project-owned Schur construction. Raw eigenvalue order is
+  retained per point; a deterministic assignment supplies tracked ordering.
+- Percentages must be finite, nonnegative, unique, and strictly increasing.
+  Invalid schedules, low-voltage states, or singular Newton/Schur systems fail closed.
