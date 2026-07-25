@@ -111,3 +111,18 @@ MATLAB is a behavioral oracle, not mathematical authority. If its behavior confl
   endpoint residual by project-owned Newton at every step.
 - Products `pf`, `sssa`, `ts`, and `full` are explicit. Unported IBR case IDs
   raise `ibr_case_not_implemented`; no model substitution or fallback occurs.
+
+## Primary GFL/GFM SMIB diagnostics
+
+- `gfl_rms10_smib` has fixed state order
+  `[delta_PLL, xi_PLL, P_f, Q_f, xi_P, xi_Q, xi_id, xi_iq, i_d, i_q]`.
+  It retains the source runtime PLL scaling, P/Q filters, outer and current PI
+  loops, modulation clamp, and normal-domain current-priority guard. Its very
+  fast PLL pole is an honest computed result, not filtered from the spectrum.
+- `gfm_no_pll_smib` has state order
+  `[delta_vsm, delta_omega_vsm, P_f, Q_f]`. It contains no PLL state or runtime
+  terminal-angle tracker. The internal Thevenin voltage angle evolves only from
+  the virtual swing equation, while voltage magnitude follows algebraic Q-V droop.
+- The GFM no-PLL fixture runs at 50 Hz; GFL-RMS10 runs at 60 Hz. Both preserve
+  system/inverter base conversion and use the same verified SMIB KCL, Schur,
+  and coupled implicit-trapezoidal engines as the reduced-six cases.

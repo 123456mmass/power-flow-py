@@ -29,3 +29,5 @@ corrector, and algebraic-residual trajectories.
 `export_ibr_reduced6_oracle.m` freezes both source-frozen reduced-six SMIB
 devices: equilibrium/KCL, DAE blocks, Schur matrices, spectra, and coupled
 implicit-trapezoidal equilibrium/perturbation trajectories.
+`export_ibr_primary_smib_oracle.m` freezes the corresponding evidence for the
+10-state GFL-RMS10 and four-state GFM-VSG no-PLL devices.
