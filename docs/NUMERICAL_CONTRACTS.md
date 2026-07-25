@@ -126,3 +126,18 @@ MATLAB is a behavioral oracle, not mathematical authority. If its behavior confl
 - The GFM no-PLL fixture runs at 50 Hz; GFL-RMS10 runs at 60 Hz. Both preserve
   system/inverter base conversion and use the same verified SMIB KCL, Schur,
   and coupled implicit-trapezoidal engines as the reduced-six cases.
+
+## Sakimoto VSM SMIB diagnostic
+
+- `gfm_vsm_sakimoto_smib` uses fixed state order
+  `[i_d, i_q, xi_id, xi_iq, omega_R, delta, x_gov, T_m, x_d]`.
+- The construction has no PLL, AVR, or PSS. The runtime angle derivative is
+  exclusively `omega_b*(omega_R-1)`; terminal voltage cannot directly reset or
+  track the angle state.
+- Equilibrium solves the physical load angle by bracketed bisection, then
+  back-solves the Q reference required by the static Q-V droop. Current-PI,
+  governor, turbine, and damper states are initialized to zero their respective
+  runtime equations rather than copied from a published modal table.
+- Current commands use the Sakimoto impedance map with a project-derived radial
+  limit. The source-frozen diagnostic remains fail-closed below its balanced
+  positive-sequence voltage floor.

@@ -112,6 +112,13 @@ class _SmibDevice:
             magnitude = abs(voltage)
             self.x0 = np.array([np.angle(voltage), 0, p, q, 0, 0, 0, 0, p / magnitude, -q / magnitude])
             self.u0 = np.array([p, q])
+        elif kind == "gfm_vsm_sakimoto":
+            self.state_names = (
+                "i_d", "i_q", "xi_id", "xi_iq", "omega_R", "delta",
+                "x_gov", "T_m", "x_d",
+            )
+            self.x0, solved_q = self._sakimoto_equilibrium(voltage, p, q)
+            self.u0 = np.array([p, solved_q])
         else:
             raise PowerFlowError("ibr_kind", "Unknown reduced-six IBR kind.")
 
@@ -122,6 +129,8 @@ class _SmibDevice:
             return complex(x[0], x[1]) * np.exp(1j * x[3])
         if self.kind == "gfl_rms10":
             return complex(x[8], x[9]) * np.exp(1j * x[0])
+        if self.kind == "gfm_vsm_sakimoto":
+            return complex(x[1], x[0]) * np.exp(1j * x[5])
         voltage_reference = self.u0[1]
         internal_magnitude = voltage_reference - 0.05 * x[3]
         internal = internal_magnitude * np.exp(1j * x[0])
@@ -172,6 +181,37 @@ class _SmibDevice:
                 (power.real - p_f) / 0.01,
                 (power.imag - q_f) / 0.01,
             ])
+        if self.kind == "gfm_vsm_sakimoto":
+            i_d, i_q, xi_id, xi_iq, omega, delta, x_gov, torque_m, x_d = x
+            rotated_voltage = voltage * np.exp(-1j * delta)
+            voltage_d, voltage_q = rotated_voltage.imag, rotated_voltage.real
+            inverter_power = rotated_voltage * np.conj(complex(i_q, i_d))
+            p_measured, q_measured = inverter_power.real, inverter_power.imag
+            eq = 1.0 + 0.05 * (self.u0[1] - q_measured)
+            denominator = 0.2**2 + 0.4**2
+            iq_raw = (0.2 * (eq - voltage_q) - 0.4 * voltage_d) / denominator
+            id_raw = (-0.4 * (eq - voltage_q) - 0.2 * voltage_d) / denominator
+            magnitude = np.hypot(id_raw, iq_raw)
+            if magnitude > 1.2:
+                scale = 1.2 / magnitude; id_command = id_raw * scale; iq_command = iq_raw * scale
+            else:
+                id_command, iq_command = id_raw, iq_raw
+            error_d, error_q = id_command - i_d, iq_command - i_q
+            terminal_d = 1.49 * error_d + 71.95 * xi_id + voltage_d + omega * 0.088 * i_q
+            terminal_q = 1.49 * error_q + 71.95 * xi_iq + voltage_q - omega * 0.088 * i_d
+            did = (terminal_d - voltage_d - 0.0022 * i_d - omega * 0.088 * i_q) * (self.omega_b / 0.088)
+            diq = (terminal_q - voltage_q - 0.0022 * i_q + omega * 0.088 * i_d) * (self.omega_b / 0.088)
+            electrical_torque = eq * i_q / omega
+            damper_state = (electrical_torque - x_d) / 0.01
+            damper_torque = 10.0 * (electrical_torque - x_d)
+            domega = (torque_m - electrical_torque - damper_torque - omega) / 4.0
+            governor_error = (1.0 - omega) + 0.05 * (self.u0[0] - p_measured)
+            return np.array([
+                did, diq, error_d, error_q, domega, self.omega_b * (omega - 1.0),
+                100.0 * governor_error,
+                (20.0 * governor_error + x_gov - torque_m) / 0.12,
+                damper_state,
+            ])
         i_d, i_q, omega, delta, emf, xi_v = x; vdq = voltage * np.exp(-1j * delta)
         domega = (self.u0[0] - power.real - 1.5 * (omega - 1)) / 0.08
         demf = (0.25 * (self.u0[1] - power.imag) - 8.0 * (emf - abs(voltage))) / 0.05
@@ -182,6 +222,53 @@ class _SmibDevice:
         did = (omega * self.inductance * i_q - self.resistance * i_d + vtd - vdq.real) / (self.inductance / self.omega_b)
         diq = (-omega * self.inductance * i_d - self.resistance * i_q + vtq - vdq.imag) / (self.inductance / self.omega_b)
         return np.array([did, diq, domega, self.omega_b * (omega - 1), demf, e_vd])
+
+    def _sakimoto_equilibrium(self, voltage: complex, p: float, q: float) -> tuple[np.ndarray, float]:
+        resistance, reactance = 0.2, 0.4
+        required_current = np.conj(complex(p, q) / voltage)
+
+        def residual(delta: float) -> float:
+            rotated_voltage = voltage * np.exp(-1j * delta)
+            voltage_d, voltage_q = rotated_voltage.imag, rotated_voltage.real
+            rotated_current = required_current * np.exp(-1j * delta)
+            current_q, current_d = rotated_current.real, rotated_current.imag
+            eq = voltage_q + ((resistance**2 + reactance**2) * current_q + reactance * voltage_d) / resistance
+            id_command = (-reactance * (eq - voltage_q) - resistance * voltage_d) / (resistance**2 + reactance**2)
+            return float(id_command - current_d)
+
+        guess = np.angle(voltage); bracket = None
+        for width in (0.5, 1.0, 2.0, 3.0, np.pi - 1e-6):
+            low, high = guess - width, guess + width
+            f_low, f_high = residual(low), residual(high)
+            if f_low * f_high < 0:
+                bracket = [low, high, f_low]; break
+        if bracket is None:
+            raise PowerFlowError("ibr_sakimoto_equilibrium", "No consistent Sakimoto load angle.")
+        low, high, f_low = bracket
+        for _ in range(300):
+            middle = 0.5 * (low + high); f_middle = residual(middle)
+            if abs(f_middle) <= 1e-9: break
+            if f_low * f_middle < 0: high = middle
+            else: low, f_low = middle, f_middle
+        delta = middle; rotated_voltage = voltage * np.exp(-1j * delta)
+        voltage_d, voltage_q = rotated_voltage.imag, rotated_voltage.real
+        rotated_current = required_current * np.exp(-1j * delta)
+        current_q, current_d = rotated_current.real, rotated_current.imag
+        eq = voltage_q + ((resistance**2 + reactance**2) * current_q + reactance * voltage_d) / resistance
+        q_measured = np.imag(rotated_voltage * np.conj(complex(current_q, current_d)))
+        solved_q = q_measured + (eq - 1.0) / 0.05
+        denominator = resistance**2 + reactance**2
+        id_command = (-reactance * (eq - voltage_q) - resistance * voltage_d) / denominator
+        iq_command = (resistance * (eq - voltage_q) - reactance * voltage_d) / denominator
+        error_d, error_q = id_command - current_d, iq_command - current_q
+        xi_id = (0.0022 * current_d - 1.49 * error_d) / 71.95
+        xi_iq = (0.0022 * current_q - 1.49 * error_q) / 71.95
+        electrical_torque = eq * current_q
+        torque_m = electrical_torque + 1.0
+        return np.array([
+            current_d, current_q, xi_id, xi_iq, 1.0, delta,
+            torque_m, torque_m, electrical_torque,
+        ]), float(solved_q)
 
 
 def _network(device: _SmibDevice, x: np.ndarray, y: np.ndarray, v_inf: complex, impedance: complex) -> np.ndarray:
@@ -245,10 +332,12 @@ def solve_reduced6_smib(case_id: str, options: IbrOptions | Mapping[str, Any] | 
     case_key=case_id.strip().lower(); kinds={
         "gfl_reduced6_smib":"gfl_reduced6", "gfm_reduced6_smib":"gfm_reduced6",
         "gfl_rms10_smib":"gfl_rms10", "gfm_no_pll_smib":"gfm_no_pll",
+        "gfm_vsm_sakimoto_smib":"gfm_vsm_sakimoto",
     }
     if case_key not in kinds: raise PowerFlowError("ibr_case_not_implemented", f"IBR case {case_id!r} is not implemented yet.")
     kind=kinds[case_key]; names={"gfl_reduced6":"GFL 6-state reduced SMIB","gfm_reduced6":"GFM 6-state reduced VSG SMIB",
                                 "gfl_rms10":"GFL RMS10 SMIB", "gfm_no_pll":"GFM VSG no-PLL SMIB"}
+    names["gfm_vsm_sakimoto"] = "GFM VSM Sakimoto no-PLL/no-AVR/no-PSS SMIB"
     terminal=1+0j;p=0.4;q=0.1;impedance=0.02+0.20j;device=_SmibDevice(kind,terminal,p,q)
     y0=np.array([terminal.real,terminal.imag])
     current=device.current(device.x0, terminal);v_inf=terminal-impedance*current
@@ -261,7 +350,9 @@ def solve_reduced6_smib(case_id: str, options: IbrOptions | Mapping[str, Any] | 
     time=drift=drift_v=perturbed=perturbed_v=residuals=None;max_drift=None
     if opt.ibr_analysis in {"ts","full"}:
         time,drift,drift_v,residuals=_integrate(device,device.x0,y0,v_inf,impedance,opt)
-        perturb_index = 1 if kind == "gfm_no_pll" and opt.perturb_state == 3 else opt.perturb_state - 1
+        if kind == "gfm_no_pll" and opt.perturb_state == 3: perturb_index = 1
+        elif kind == "gfm_vsm_sakimoto" and opt.perturb_state == 3: perturb_index = 4
+        else: perturb_index = opt.perturb_state - 1
         if perturb_index >= device.x0.size:
             raise PowerFlowError("ibr_perturbation", "Perturbation state exceeds the device order.")
         xp=device.x0.copy();xp[perturb_index]+=opt.perturb_amplitude;yp=_solve_voltage(device,xp,y0,v_inf,impedance,opt)

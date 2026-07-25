@@ -31,3 +31,5 @@ devices: equilibrium/KCL, DAE blocks, Schur matrices, spectra, and coupled
 implicit-trapezoidal equilibrium/perturbation trajectories.
 `export_ibr_primary_smib_oracle.m` freezes the corresponding evidence for the
 10-state GFL-RMS10 and four-state GFM-VSG no-PLL devices.
+`export_ibr_sakimoto_oracle.m` freezes equilibrium, nine-state DAE blocks,
+spectrum, and nonlinear TDS evidence for the no-PLL/no-AVR/no-PSS Sakimoto VSM.

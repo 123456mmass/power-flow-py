@@ -1,0 +1,43 @@
+function payload=export_ibr_sakimoto_oracle(output_file,source_root)
+%EXPORT_IBR_SAKIMOTO_ORACLE Export nine-state Sakimoto SMIB evidence.
+if nargin<1 || isempty(output_file),error('export_ibr_sakimoto_oracle:output','Output required.');end
+if ~is_absolute_path(output_file),output_file=fullfile(pwd,output_file);end
+if nargin<2 || isempty(source_root)
+    here=fileparts(mfilename('fullpath'));
+    source_root=fullfile(fileparts(fileparts(fileparts(here))),'Power-flow');
+end
+old_dir=pwd;cleanup=onCleanup(@()cd(old_dir)); %#ok<NASGU>
+cd(source_root);pf_init_paths();
+[~,commit]=system(sprintf('git -C "%s" rev-parse HEAD',source_root));
+[~,git_status]=system(sprintf('git -C "%s" status --short',source_root));
+c=cases.case_ibr_smib_gfm_vsm_sakimoto();
+opt=struct('ibr_analysis','full','t_end',0.01,'dt',0.001, ...
+    'plot_results',false,'plot_visible',false,'verbose',false);
+r=ibr.run_smib_verification_case(c,opt); s=r.sssa; t=r.ts;
+payload=struct('schema','power-flow-py/matlab-ibr-sakimoto-oracle/1.0', ...
+    'source_git_commit',strtrim(commit),'source_git_status',git_status, ...
+    'classification','ASSUMED_DIAGNOSTIC_SOURCE_FROZEN_FIXTURE', ...
+    'case_id','gfm_vsm_sakimoto_smib','kind',c.smib_verification.kind, ...
+    'state_names',{s.state_names},'x0',s.x_eq(:).','y0',s.y_eq(:).', ...
+    'u0',s.u_eq(:).','Vinf_real',real(s.V_inf),'Vinf_imag',imag(s.V_inf), ...
+    'f0',s.f0(:).','g0',s.g0(:).','fx',s.fx,'fy',s.fy,'gx',s.gx, ...
+    'gy',s.gy,'A',s.A,'eigen_real',real(s.eigenvalues(:)).', ...
+    'eigen_imag',imag(s.eigenvalues(:)).','t',t.tgrid(:).', ...
+    'x_drift',t.x_drift.','y_drift',t.y_drift.', ...
+    'x_perturbed',t.x_perturbed.','y_perturbed',t.y_perturbed.', ...
+    'newton_residual',t.newton_info_drift.max_resid_history(:).', ...
+    'max_drift',t.max_drift);
+parent=fileparts(output_file);if ~exist(parent,'dir'),mkdir(parent);end
+fid=fopen(output_file,'w');if fid<0,error('export_ibr_sakimoto_oracle:open','Open failed.');end
+file_cleanup=onCleanup(@()fclose(fid)); %#ok<NASGU>
+fprintf(fid,'%s',jsonencode(payload,'PrettyPrint',true));
+fprintf('Wrote Sakimoto IBR oracle: %s\n',output_file);
+end
+
+function tf=is_absolute_path(path_text)
+if ispc
+    tf=~isempty(regexp(path_text,'^[A-Za-z]:[\\/]','once')) || startsWith(path_text,'\\\\');
+else
+    tf=startsWith(path_text,'/');
+end
+end
