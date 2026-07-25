@@ -72,7 +72,7 @@ def main(argv: list[str] | None = None) -> int:
             if args.model is not None:
                 options["model"] = args.model
         else:
-            if args.case.strip().lower() in {"two_ibr_switch", "ieee14_switch", "ieee14_1sg_4ibr"}:
+            if args.case.strip().lower() in {"two_ibr_switch", "ieee14_switch", "ieee14_1sg_4ibr", "padiyar_switch"}:
                 options = {"ibr_analysis": args.ibr_product, "t_end": args.t_end, "dt": args.dt}
             elif args.ibr_product == "sssa_load_sweep":
                 options = {"ibr_analysis": args.ibr_product}

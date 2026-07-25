@@ -6,10 +6,15 @@ from power_flow.ibr.switching import TwoIbrSwitchOptions, TwoIbrSwitchResult, so
 from power_flow.ibr.ieee14_switching import (
     Ieee14SwitchOptions, Ieee14SwitchResult, solve_ieee14_switch,
 )
+from power_flow.ibr.padiyar_switching import (
+    PadiyarSwitchOptions, PadiyarSwitchResult, solve_padiyar_switch,
+)
 
 __all__ = [
     "IbrOptions", "IbrResult", "LoadedIbrOptions", "LoadedIbrPoint", "LoadedIbrResult",
     "TwoIbrSwitchOptions", "TwoIbrSwitchResult", "solve_reduced6_smib",
     "Ieee14SwitchOptions", "Ieee14SwitchResult",
+    "PadiyarSwitchOptions", "PadiyarSwitchResult",
     "solve_loaded_smib_sweep", "solve_two_ibr_switch", "solve_ieee14_switch",
+    "solve_padiyar_switch",
 ]

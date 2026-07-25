@@ -199,3 +199,20 @@ MATLAB is a behavioral oracle, not mathematical authority. If its behavior confl
 - The default active MATLAB fixture is the numerical oracle. PF, eigenvalues,
   trip/reclose transactions, selected trajectories, AGSI, P/Q, and voltage
   minima are regression-gated; no packaged power-system library is involved.
+
+## Padiyar one-SG/three-IBR switching diagnostic
+
+- `padiyar_switch` retains the project-owned Padiyar two-area passive network
+  and constant-impedance loads. The model-1.1 AVR machine at bus 11 remains an
+  SG; machine buses 1, 2, and 12 become switchable reduced-six IBRs.
+- The SG has five states and primary droop. Together with three six-state IBRs,
+  the reduced composite has 23 differential states and 20 rectangular network
+  variables. Converter internal states use individual machine bases, while KCL
+  currents and reported powers use the 100 MVA system base.
+- The SG-online SSSA operating point contains one positive real mode in the
+  active MATLAB baseline. The Python route reports that instability faithfully;
+  it does not tune, clamp, or relabel the physical mode to force a stable result.
+- Default TDS trips the bus-11 SG at 1 second and synchronously recloses it at
+  4 seconds. Reference handback and subsequent per-device AGSI++ decisions are
+  atomic switch transactions. PF, eigenvalues, selected trajectories, P/Q,
+  voltage minima, and all transactions are MATLAB-regression-gated.

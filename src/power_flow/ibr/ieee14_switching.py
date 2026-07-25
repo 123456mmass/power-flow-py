@@ -98,7 +98,7 @@ class Ieee14SwitchResult:
             "case_id": self.case_id,
             "product": self.product,
             "converged": self.converged,
-            "devices": 5,
+            "devices": int(self.metadata.get("device_count", 5)),
             "states": int(self.state_matrix.shape[0]),
             "small_signal_unstable_modes": int(np.sum(self.eigenvalues.real > 1e-6)),
             "max_real_eigenvalue": float(np.max(self.eigenvalues.real)),
@@ -288,7 +288,7 @@ class _System:
     bus_ids: np.ndarray
     y: np.ndarray
     y0: np.ndarray
-    sg: _ManualSg
+    sg: Any
     devices: list[_ScaledSupervisor]
     x0: np.ndarray
     sg_position: int
@@ -329,7 +329,8 @@ def _build_system(opt: Ieee14SwitchOptions) -> _System:
 
 
 def _split_state(system: _System, x: np.ndarray) -> tuple[np.ndarray, list[np.ndarray]]:
-    return x[:4], [x[4+6*j:10+6*j] for j in range(4)]
+    nsg = system.sg.x0.size
+    return x[:nsg], [x[nsg+6*j:nsg+6*(j+1)] for j in range(len(system.devices))]
 
 
 def _composite(system: _System, x: np.ndarray, y: np.ndarray,
@@ -342,7 +343,7 @@ def _composite(system: _System, x: np.ndarray, y: np.ndarray,
         differential.append(system.sg.rhs(sg_x, voltage[system.sg_position]))
         current_balance[system.sg_position] += system.sg.current(sg_x, voltage[system.sg_position])
     else:
-        differential.append(np.zeros(4))
+        differential.append(np.zeros(system.sg.x0.size))
     for j, device in enumerate(system.devices):
         bus_voltage = voltage[system.ibr_positions[j]]
         differential.append(device.rhs(ibr_x[j], bus_voltage))
@@ -372,22 +373,24 @@ def _equilibrium_residual(system: _System) -> float:
     return float(max(np.max(np.abs(f)),np.max(np.abs(g))))
 
 
-def _simulate(system: _System, opt: Ieee14SwitchOptions) -> tuple[Any,...]:
+def _simulate(system: _System, opt: Any) -> tuple[Any,...]:
     nx, ny = system.x0.size, system.y0.size
+    nsg, ndev = system.sg.x0.size, len(system.devices)
     steps = int(round(opt.t_end/opt.dt)); time=np.arange(steps+1)*opt.dt
     state=np.zeros((steps+1,nx)); y=np.zeros((steps+1,ny))
     state[0],y[0]=system.x0,system.y0
     residual=np.zeros(steps); online=np.ones(steps+1,dtype=bool)
-    frequency=np.zeros((steps+1,4)); index=np.zeros((steps+1,4)); mode=np.zeros((steps+1,4))
-    p_ibr=np.zeros((steps+1,4)); q_ibr=np.zeros((steps+1,4)); v_min=np.zeros(steps+1)
+    frequency=np.zeros((steps+1,ndev)); index=np.zeros((steps+1,ndev)); mode=np.zeros((steps+1,ndev))
+    p_ibr=np.zeros((steps+1,ndev)); q_ibr=np.zeros((steps+1,ndev)); v_min=np.zeros(steps+1)
     events: list[tuple[float,float,float,float]]=[]
 
     def record(k: int,t: float) -> None:
         voltage=y[k,0::2]+1j*y[k,1::2];v_min[k]=float(np.min(np.abs(voltage)))
         for j,device in enumerate(system.devices):
             vb=voltage[system.ibr_positions[j]]
-            frequency[k,j],p_ibr[k,j],q_ibr[k,j],_=device.signals(state[k,4+6*j:10+6*j],vb)
-            index[k,j]=device.index(state[k,4+6*j:10+6*j],vb,t,False)
+            sl=slice(nsg+6*j,nsg+6*(j+1))
+            frequency[k,j],p_ibr[k,j],q_ibr[k,j],_=device.signals(state[k,sl],vb)
+            index[k,j]=device.index(state[k,sl],vb,t,False)
             mode[k,j]=float(device.mode!="gfl")
 
     record(0,0.0); previous_online=True
@@ -396,10 +399,10 @@ def _simulate(system: _System, opt: Ieee14SwitchOptions) -> tuple[Any,...]:
         is_online = bool(t1 < opt.sg_trip_time or t1 >= opt.sg_reclose_time)
         if is_online and not previous_online:
             voltage=y[k,0::2]+1j*y[k,1::2]
-            state[k,:4]=system.sg.reinitialize(voltage[system.sg_position])
+            state[k,:nsg]=system.sg.reinitialize(voltage[system.sg_position])
             for j,device in enumerate(system.devices):
                 if device.mode != "gfl":
-                    state[k,4+6*j:10+6*j]=device.restore(voltage[system.ibr_positions[j]],t1)
+                    state[k,nsg+6*j:nsg+6*(j+1)]=device.restore(voltage[system.ibr_positions[j]],t1)
                     events.append((t1,float(j+1),np.nan,0.0))
         previous_online=is_online
         for j,device in enumerate(system.devices):
@@ -413,7 +416,7 @@ def _simulate(system: _System, opt: Ieee14SwitchOptions) -> tuple[Any,...]:
             f1,g1=_composite(system,x1,y1,is_online)
             differential=x1-x_old-0.5*opt.dt*(f_old+f1)
             if not is_online:
-                differential[:4]=x1[:4]-x_old[:4]
+                differential[:nsg]=x1[:nsg]-x_old[:nsg]
             return np.concatenate((differential,g1))
 
         def jacobian(value: np.ndarray,r0: np.ndarray) -> np.ndarray:
@@ -462,7 +465,7 @@ def _simulate(system: _System, opt: Ieee14SwitchOptions) -> tuple[Any,...]:
         record(k+1,t1)
         voltage=y[k+1,0::2]+1j*y[k+1,1::2]
         for j,device in enumerate(system.devices):
-            sl=slice(4+6*j,10+6*j)
+            sl=slice(nsg+6*j,nsg+6*(j+1))
             switched,did,value=device.switch(state[k+1,sl],voltage[system.ibr_positions[j]],t1)
             if did:
                 state[k+1,sl]=switched

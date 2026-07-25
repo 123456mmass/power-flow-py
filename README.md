@@ -25,6 +25,7 @@ The project implements its own numerical algorithms. NumPy and SciPy are used on
 - Loaded GFL-RMS10/GFM-no-PLL SMIB equilibrium, Schur SSSA, and load sweep
 - Two-device common-PCC AGSI++ GFL/GFM switching with weak-grid events
 - IEEE 14-bus one-SG/four-IBR AGSI++ trip/reclose switching with MATLAB parity
+- Padiyar two-area one-SG/three-IBR AGSI++ trip/reclose switching with MATLAB parity
 - CLI and Python API
 - Frozen and live MATLAB differential verification
 
@@ -53,6 +54,7 @@ power-flow --analysis ibr --case gfl_rms10_smib --ibr-product ts --t-end 0.03 --
 power-flow --analysis ibr --case gfl_rms10_loaded_smib --ibr-product sssa_load_sweep --ibr-load-percentages 0 20 40 60 80
 power-flow --analysis ibr --case two_ibr_switch --ibr-product full --t-end 8 --dt 0.001
 power-flow --analysis ibr --case ieee14_switch --ibr-product full --t-end 6 --dt 0.002
+power-flow --analysis ibr --case padiyar_switch --ibr-product full --t-end 6 --dt 0.002
 ```
 
 Python API:
