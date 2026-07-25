@@ -27,6 +27,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--dt", type=float, default=0.01)
     parser.add_argument("--fault-bus", type=int)
     parser.add_argument("--ibr-product", default="full", choices=("pf", "sssa", "ts", "full"))
+    parser.add_argument("--ibr-fault-on", type=float, default=0.0)
+    parser.add_argument("--ibr-fault-clear", type=float, default=0.0)
+    parser.add_argument("--ibr-fault-reactance", type=float, default=0.10)
+    parser.add_argument("--ibr-step-on", type=float, default=0.0)
+    parser.add_argument("--ibr-step-dv", type=float, default=-0.10)
+    parser.add_argument("--ibr-step-dphase-deg", type=float, default=20.0)
     parser.add_argument("--t-fault", type=float, default=0.5)
     parser.add_argument("--t-clear", type=float, default=0.6)
     parser.add_argument(
@@ -62,7 +68,13 @@ def main(argv: list[str] | None = None) -> int:
             if args.model is not None:
                 options["model"] = args.model
         else:
-            options = {"ibr_analysis": args.ibr_product, "t_end": args.t_end, "dt": args.dt}
+            options = {
+                "ibr_analysis": args.ibr_product, "t_end": args.t_end, "dt": args.dt,
+                "fault_on": args.ibr_fault_on, "fault_clear": args.ibr_fault_clear,
+                "fault_impedance": 1j * args.ibr_fault_reactance,
+                "step_on": args.ibr_step_on, "step_dv": args.ibr_step_dv,
+                "step_dphase_deg": args.ibr_step_dphase_deg,
+            }
         result = solve_case(
             args.analysis,
             args.case,

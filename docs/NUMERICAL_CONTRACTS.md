@@ -141,3 +141,17 @@ MATLAB is a behavioral oracle, not mathematical authority. If its behavior confl
 - Current commands use the Sakimoto impedance map with a project-derived radial
   limit. The source-frozen diagnostic remains fail-closed below its balanced
   positive-sequence voltage floor.
+
+## IBR SMIB event contract
+
+- A balanced three-phase PCC fault is a temporary shunt admittance `1/Zf` in
+  the terminal KCL over `[fault_on, fault_clear)`. A grid step permanently
+  changes infinite-bus magnitude and phase at `step_on`.
+- Events enter only the algebraic endpoint KCL. Differential equations and the
+  previous-endpoint derivative in the implicit-trapezoidal rule are unchanged.
+- Fault and grid-step trajectories start independently from the exact operating
+  point. With no event options, legacy drift and perturbation results are
+  bit-identical and no event trajectory is allocated.
+- RMS10 balanced LVRT, modulation limits, and directional anti-windup, plus the
+  Sakimoto limiter anti-windup, remain active during faults. Voltage-domain or
+  Newton failures propagate as fail-closed errors; there is no silent fallback.

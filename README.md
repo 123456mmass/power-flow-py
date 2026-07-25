@@ -21,6 +21,7 @@ The project implements its own numerical algorithms. NumPy and SciPy are used on
 - Reduced six-state GFL/GFM single-infinite-bus IBR PF/SSSA/TDS diagnostics
 - GFL-RMS10 and four-state GFM-VSG no-PLL SMIB PF/SSSA/TDS diagnostics
 - Nine-state GFM-VSM Sakimoto no-PLL/no-AVR/no-PSS SMIB diagnostics
+- PCC shunt-fault and infinite-bus magnitude/phase-step IBR SMIB events
 - CLI and Python API
 - Frozen and live MATLAB differential verification
 
@@ -45,6 +46,7 @@ power-flow --analysis ts --case padiyar_two_area --model padiyar_1_1_avr --t-end
 power-flow --analysis ibr --case gfl_reduced6_smib --ibr-product full --t-end 0.05
 power-flow --analysis ibr --case gfm_no_pll_smib --ibr-product sssa
 power-flow --analysis ibr --case gfm_vsm_sakimoto_smib --ibr-product full --t-end 0.05
+power-flow --analysis ibr --case gfl_rms10_smib --ibr-product ts --t-end 0.03 --dt 0.001 --ibr-fault-on 0.01 --ibr-fault-clear 0.02
 ```
 
 Python API:

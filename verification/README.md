@@ -33,3 +33,5 @@ implicit-trapezoidal equilibrium/perturbation trajectories.
 10-state GFL-RMS10 and four-state GFM-VSG no-PLL devices.
 `export_ibr_sakimoto_oracle.m` freezes equilibrium, nine-state DAE blocks,
 spectrum, and nonlinear TDS evidence for the no-PLL/no-AVR/no-PSS Sakimoto VSM.
+`export_ibr_smib_events_oracle.m` freezes PCC shunt-fault and permanent
+infinite-bus voltage/phase-step trajectories for all five supported SMIB models.
