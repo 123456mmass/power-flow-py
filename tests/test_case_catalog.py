@@ -48,8 +48,8 @@ def test_every_active_network_case_matches_matlab_pf() -> None:
         # IEEE300's dense linear solve amplifies platform roundoff into Q by
         # roughly 7e-13; keep the cross-runtime gate at a strict 1e-12.
         np.testing.assert_allclose(result.q_generation, expected["q_generation"], atol=1e-12, rtol=0)
-        # Linux and Windows BLAS paths differ by up to 2.01e-13 for the
-        # IEEE300 loss sum; retain a 3e-13 cross-platform envelope.
-        p_loss_tolerance = 3e-13 if expected["case_id"] == "ieee300" else 2e-13
+        # Python 3.11/3.12 Linux and Windows BLAS paths differ by up to
+        # 3.81e-13 for the IEEE300 loss sum; retain a strict 5e-13 envelope.
+        p_loss_tolerance = 5e-13 if expected["case_id"] == "ieee300" else 2e-13
         assert abs(result.p_loss_total - expected["p_loss_total"]) < p_loss_tolerance
         assert abs(result.q_loss_total - expected["q_loss_total"]) < 2e-12
