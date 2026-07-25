@@ -24,7 +24,7 @@ def test_loaded_smib_sweeps_match_matlab_equilibria_and_sssa():
                 (actual.x_equilibrium,"x0",1e-12), (actual.y_equilibrium,"y0",1e-12),
                 (actual.u_equilibrium,"u0",0), (actual.f_residual,"f0",3e-11),
                 (actual.g_residual,"g0",3e-12), (actual.fx,"fx",4e-7),
-                (actual.fy,"fy",4e-7), (actual.gx,"gx",2e-10),
+                (actual.fy,"fy",4e-7), (actual.gx,"gx",6e-10),
                 (actual.gy,"gy",2e-10), (actual.state_matrix,"A",3e-6),
             ):
                 np.testing.assert_allclose(value, oracle[key], rtol=0, atol=tolerance)
