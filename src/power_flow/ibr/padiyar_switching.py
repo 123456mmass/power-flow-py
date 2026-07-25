@@ -36,6 +36,9 @@ class PadiyarSwitchOptions:
     newton_tolerance: float = 1e-8
     newton_max_iterations: int = 40
     fd_eps: float = 1e-6
+    stream_callback: Any = None
+    cancel_check: Any = None
+    stream_stride: int = 10
 
     def __post_init__(self) -> None:
         product=self.ibr_analysis.strip().lower();mode=self.index_mode.strip().lower()
@@ -47,6 +50,7 @@ class PadiyarSwitchOptions:
             raise PowerFlowError("padiyar_switch_options","Invalid switching time options.")
         if self.agsi_down>=self.agsi_up:
             raise PowerFlowError("padiyar_switch_options","agsi_down must be below agsi_up.")
+        if self.stream_stride<1:raise PowerFlowError("padiyar_switch_options","stream_stride must be positive.")
         object.__setattr__(self,"ibr_analysis",product);object.__setattr__(self,"index_mode",mode)
 
     @classmethod

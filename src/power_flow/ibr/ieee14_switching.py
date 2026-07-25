@@ -33,6 +33,9 @@ class Ieee14SwitchOptions:
     newton_tolerance: float = 1e-8
     newton_max_iterations: int = 40
     fd_eps: float = 1e-6
+    stream_callback: Any = None
+    cancel_check: Any = None
+    stream_stride: int = 10
 
     def __post_init__(self) -> None:
         product = self.ibr_analysis.strip().lower()
@@ -45,6 +48,8 @@ class Ieee14SwitchOptions:
             raise PowerFlowError("ieee14_switch_options", "Invalid switching time options.")
         if self.agsi_down >= self.agsi_up:
             raise PowerFlowError("ieee14_switch_options", "agsi_down must be below agsi_up.")
+        if self.stream_stride < 1:
+            raise PowerFlowError("ieee14_switch_options", "stream_stride must be positive.")
         object.__setattr__(self, "ibr_analysis", product)
         object.__setattr__(self, "index_mode", mode)
 
@@ -383,6 +388,20 @@ def _simulate(system: _System, opt: Any) -> tuple[Any,...]:
     frequency=np.zeros((steps+1,ndev)); index=np.zeros((steps+1,ndev)); mode=np.zeros((steps+1,ndev))
     p_ibr=np.zeros((steps+1,ndev)); q_ibr=np.zeros((steps+1,ndev)); v_min=np.zeros(steps+1)
     events: list[tuple[float,float,float,float]]=[]
+    stream_callback=getattr(opt,"stream_callback",None);cancel_check=getattr(opt,"cancel_check",None)
+    stream_stride=int(getattr(opt,"stream_stride",10));ibr_ids=system.bus_ids[system.ibr_positions]
+
+    def stream_sample(k: int,t: float,force: bool=False) -> None:
+        if not callable(stream_callback) or (not force and k%stream_stride):return
+        voltage=y[k,0::2]+1j*y[k,1::2];values={}
+        for bus_id,value in zip(system.bus_ids,voltage,strict=True):values[f"bus.{int(bus_id)}.v"]=[float(abs(value))]
+        for j,bus_id in enumerate(ibr_ids):
+            prefix=f"ibr.{int(bus_id)}"
+            values[f"{prefix}.frequency"]=[float(frequency[k,j])];values[f"{prefix}.p"]=[float(p_ibr[k,j])]
+            values[f"{prefix}.q"]=[float(q_ibr[k,j])];values[f"{prefix}.agsi"]=[float(index[k,j])]
+            values[f"{prefix}.mode"]=[float(system.devices[j].mode!="gfl") if force else float(mode[k,j])]
+        values["solver.residual"]=[float(residual[k-1]) if k else 0.0]
+        stream_callback({"type":"samples","t":[float(t)],"values":values,"step":k,"totalSteps":steps})
 
     def record(k: int,t: float) -> None:
         voltage=y[k,0::2]+1j*y[k,1::2];v_min[k]=float(np.min(np.abs(voltage)))
@@ -393,8 +412,10 @@ def _simulate(system: _System, opt: Any) -> tuple[Any,...]:
             index[k,j]=device.index(state[k,sl],vb,t,False)
             mode[k,j]=float(device.mode!="gfl")
 
-    record(0,0.0); previous_online=True
+    record(0,0.0);stream_sample(0,0.0,True);previous_online=True
     for k in range(steps):
+        if callable(cancel_check) and cancel_check():
+            raise PowerFlowError("run_cancelled","Run cancelled during time-domain integration.")
         t1=time[k+1]
         is_online = bool(t1 < opt.sg_trip_time or t1 >= opt.sg_reclose_time)
         if is_online and not previous_online:
@@ -404,6 +425,8 @@ def _simulate(system: _System, opt: Any) -> tuple[Any,...]:
                 if device.mode != "gfl":
                     state[k,nsg+6*j:nsg+6*(j+1)]=device.restore(voltage[system.ibr_positions[j]],t1)
                     events.append((t1,float(j+1),np.nan,0.0))
+                    if callable(stream_callback):stream_callback({"type":"mode_switch","t":float(t1),"deviceIndex":j+1,
+                        "bus":int(ibr_ids[j]),"from":"GFM","to":"GFL","agsi":None,"trigger":"reference handback"})
         previous_online=is_online
         for j,device in enumerate(system.devices):
             device.grid_scr=20.0 if is_online else system.scr_bus[j]
@@ -463,13 +486,18 @@ def _simulate(system: _System, opt: Any) -> tuple[Any,...]:
             raise PowerFlowError("ieee14_switch_newton",f"IEEE14 switching step {k+1} did not converge (residual {nr:.3e}).")
         state[k+1],y[k+1],residual[k],online[k+1]=z[:nx],z[nx:],nr,is_online
         record(k+1,t1)
+        stream_sample(k+1,t1)
         voltage=y[k+1,0::2]+1j*y[k+1,1::2]
         for j,device in enumerate(system.devices):
             sl=slice(nsg+6*j,nsg+6*(j+1))
             switched,did,value=device.switch(state[k+1,sl],voltage[system.ibr_positions[j]],t1)
             if did:
+                source="GFL" if device.mode=="GFM" else "GFM"
                 state[k+1,sl]=switched
                 events.append((t1,float(j+1),value,float(device.mode=="GFM")))
+                if callable(stream_callback):stream_callback({"type":"mode_switch","t":float(t1),"deviceIndex":j+1,
+                    "bus":int(ibr_ids[j]),"from":source,"to":device.mode.upper(),"agsi":float(value),"trigger":"AGSI++ threshold"})
+                stream_sample(k+1,t1,True)
     voltages=y[:,0::2]+1j*y[:,1::2]
     return (time,state,voltages,frequency,index,mode,p_ibr,q_ibr,v_min,online,
             np.asarray(events,dtype=float).reshape((-1,4)),residual,True)

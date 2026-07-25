@@ -78,6 +78,36 @@ class InMemoryRunService:
                 raw.pop("sssa_load_percentages",None)
         return raw
 
+    @staticmethod
+    def _switch_signals(case_id: str) -> list[dict[str,Any]]:
+        buses,ibr_buses=(([1,2,3,4,5,6,7,8,9,10,11,12,13,14],[2,3,6,8]) if case_id in {"ieee14_switch","ieee14_1sg_4ibr"}
+                         else ([1,2,3,4,5,6,7,8,11,12],[1,2,12]))
+        rows=[{"id":f"bus.{bus}.v","label":f"Bus {bus} voltage","group":"Buses","unit":"pu","panel":"voltage"} for bus in buses]
+        for bus in ibr_buses:
+            for suffix,label,unit,panel in (("frequency","Frequency","Hz","frequency"),("p","Active power","pu","power"),
+                    ("q","Reactive power","pu","power"),("agsi","AGSI","","agsi"),("mode","Mode","","mode")):
+                rows.append({"id":f"ibr.{bus}.{suffix}","label":f"IBR {bus} {label}","group":"IBRs","unit":unit,"panel":panel,"device":f"IBR {bus}"})
+        rows.append({"id":"solver.residual","label":"Newton residual","group":"Solver","unit":"pu","panel":"residual"})
+        return rows
+
+    def _live_callback(self,run: _Run) -> Any:
+        def callback(message: Mapping[str,Any]) -> None:
+            if message.get("type")=="samples":
+                chunk={"seq":run.event_seq+1,"t":list(message["t"]),"values":deepcopy(message["values"])}
+                run.chunks.append(chunk);self._emit(run,{"type":"samples","runId":run.id,"chunk":chunk})
+                step=int(message.get("step",0));total=int(message.get("totalSteps",0));sim=float(chunk["t"][-1])
+                run.progress={"fraction":step/total if total else 0.0,"simTime":sim,"simEnd":None,
+                              "step":step,"totalSteps":total or None,"elapsedMs":0,"etaMs":None,"stage":"Time-domain integration"}
+                self._emit(run,{"type":"progress","runId":run.id,"progress":deepcopy(run.progress)})
+            elif message.get("type")=="mode_switch":
+                event={"id":f"live-switch-{len(run.sim_events)+1}","kind":"mode_switch","t":float(message["t"]),
+                       "label":f"IBR {message['bus']}: {message['from']} → {message['to']}",
+                       "detail":message.get("trigger","mode switch")+("" if message.get("agsi") is None else f"; AGSI={float(message['agsi']):.6g}"),
+                       "device":f"IBR {message['bus']}","severity":"warning" if message["to"]=="GFM" else "info"}
+                run.sim_events.append(event);self._emit(run,{"type":"event","runId":run.id,"event":event})
+                self._log(run,"warn" if message["to"]=="GFM" else "info",event["label"]+" — "+event["detail"],"switching")
+        return callback
+
     def submit(self,request: Mapping[str,Any],user: str="demo.engineer") -> dict[str,Any]:
         body=deepcopy(dict(request));config=body.get("config")
         if not isinstance(config,dict) or not {"analysis","case","options"}.issubset(config):
@@ -95,16 +125,21 @@ class InMemoryRunService:
         self._set_status(run,"initializing");run.progress=_progress("Validating configuration",.02)
         self._emit(run,{"type":"progress","runId":run.id,"progress":deepcopy(run.progress)})
         self._log(run,"info",f"Initializing {config['analysis']} analysis for {config['case']}.")
+        if config["analysis"]=="ibr" and config["case"] in {"ieee14_switch","ieee14_1sg_4ibr","padiyar_switch"}:
+            run.signals=self._switch_signals(str(config["case"]))
         if run.cancel_requested:self._finish_cancelled(run);return
         self._set_status(run,"running");run.progress=_progress("Numerical solve",.08)
         self._emit(run,{"type":"progress","runId":run.id,"progress":deepcopy(run.progress)})
         try:
-            result=solve_case(str(config["analysis"]),str(config["case"]),self._solver_options(config))
+            options=self._solver_options(config)
+            if config["analysis"]=="ibr" and config["case"] in {"ieee14_switch","ieee14_1sg_4ibr","padiyar_switch"}:
+                options.update({"stream_callback":self._live_callback(run),"cancel_check":lambda:run.cancel_requested,"stream_stride":10})
+            result=solve_case(str(config["analysis"]),str(config["case"]),options)
             if run.cancel_requested:self._finish_cancelled(run);return
             payload,signals=serialize_result(result,config);run.result=payload;run.signals=signals
             run.sim_events=list(payload.get("events",[]));summary=result.summary() if hasattr(result,"summary") else {}
             run.iterations=summary.get("iterations");run.max_mismatch=summary.get("max_mismatch")
-            chunks=series_chunks(payload)
+            chunks=[] if run.chunks else series_chunks(payload)
             for chunk in chunks:
                 chunk["seq"]=run.event_seq+1;run.chunks.append(chunk)
                 self._emit(run,{"type":"samples","runId":run.id,"chunk":chunk})
@@ -117,7 +152,9 @@ class InMemoryRunService:
             self._set_status(run,"converged" if converged else "failed")
             self._log(run,"info" if converged else "warn",f"Run finished: {run.reason}.")
         except PowerFlowError as error:
-            run.error_code=error.code;run.reason=str(error);self._set_status(run,"failed");self._log(run,"error",str(error))
+            if error.code=="run_cancelled" or run.cancel_requested:self._finish_cancelled(run)
+            else:
+                run.error_code=error.code;run.reason=str(error);self._set_status(run,"failed");self._log(run,"error",str(error))
         except Exception as error:  # fail closed at the service boundary
             run.error_code="internal_solver_error";run.reason=str(error);self._set_status(run,"failed")
             self._log(run,"error",f"Unhandled solver failure: {error}")

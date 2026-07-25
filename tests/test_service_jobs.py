@@ -47,7 +47,10 @@ def test_run_service_switching_result_publishes_signal_chunks():
         assert payload["result"]["kind"]=="switching"
         assert payload["result"]["transactions"]
         assert done["signals"]
-        assert service.snapshot(detail["id"])["chunks"]
+        snapshot=service.snapshot(detail["id"])
+        assert snapshot["chunks"]
+        assert any(event["kind"]=="mode_switch" for event in done["events"])
+        assert any(log["source"]=="switching" for log in snapshot["logs"])
     finally:service.close()
 
 
@@ -67,3 +70,21 @@ def test_queued_run_can_be_cancelled(monkeypatch):
         events,_=service.events_after(second["id"],0)
         assert sum(event["type"]=="done" for _,event in events)==1
     finally:gate.set();service.close()
+
+
+def test_running_switch_simulation_observes_cancellation():
+    service=InMemoryRunService(max_workers=1)
+    try:
+        detail=service.submit({"config":{"analysis":"ibr","case":"padiyar_switch","options":{
+            "ibr_analysis":"ts","t_end":8.0,"dt":.002,"fault_on":0,"fault_clear":0,
+            "fault_reactance":.1,"step_on":0,"step_dv":-.1,"step_dphase_deg":20,
+            "sssa_load_percentages":[],
+        }}})
+        deadline=time.monotonic()+5
+        while time.monotonic()<deadline:
+            if service.snapshot(detail["id"])["chunks"]:break
+            time.sleep(.01)
+        assert service.snapshot(detail["id"])["chunks"]
+        service.cancel(detail["id"])
+        assert _wait(service,detail["id"],timeout=5)["status"]=="cancelled"
+    finally:service.close()
