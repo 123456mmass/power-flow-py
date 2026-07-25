@@ -27,6 +27,7 @@ The project implements its own numerical algorithms. NumPy and SciPy are used on
 - IEEE 14-bus one-SG/four-IBR AGSI++ trip/reclose switching with MATLAB parity
 - Padiyar two-area one-SG/three-IBR AGSI++ trip/reclose switching with MATLAB parity
 - CLI and Python API
+- REST/SSE run service for the Next.js scientific frontend
 - Frozen and live MATLAB differential verification
 
 PF, classical SSSA/TS, Kundur EMF6, and Padiyar model-1.1 SSSA/TS routes are
@@ -56,6 +57,17 @@ power-flow --analysis ibr --case two_ibr_switch --ibr-product full --t-end 8 --d
 power-flow --analysis ibr --case ieee14_switch --ibr-product full --t-end 6 --dt 0.002
 power-flow --analysis ibr --case padiyar_switch --ibr-product full --t-end 6 --dt 0.002
 ```
+
+Web API service:
+
+```powershell
+python -m pip install -e ".[web]"
+power-flow-api
+```
+
+The service listens on `http://127.0.0.1:8000`. REST endpoints are under
+`/api`; each run exposes a resumable SSE stream at
+`/api/runs/{run_id}/stream?fromSeq=0`.
 
 Python API:
 

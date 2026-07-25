@@ -17,10 +17,18 @@ dependencies = [
 dev = [
   "pytest>=8,<10",
   "pytest-cov>=5,<8",
+  "fastapi>=0.135,<1",
+  "httpx>=0.28,<1",
+]
+web = [
+  "fastapi>=0.135,<1",
+  "uvicorn[standard]>=0.35,<1",
+  "httpx>=0.28,<1",
 ]
 
 [project.scripts]
 power-flow = "power_flow.cli:main"
+power-flow-api = "power_flow.service.app:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
