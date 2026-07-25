@@ -13,6 +13,7 @@ from power_flow.contracts import (
 from power_flow.pf import solve_newton_raphson
 from power_flow.sssa import solve_classical_sssa
 from power_flow.sssa.classical import SssaOptions, SssaResult
+from power_flow.ts import TsOptions, TsResult, simulate_classical
 
 __all__ = [
     "ACTIVE_ANALYSES",
@@ -25,10 +26,13 @@ __all__ = [
     "PowerFlowResult",
     "SssaOptions",
     "SssaResult",
+    "TsOptions",
+    "TsResult",
     "ieee5",
     "ieee14",
     "load_case",
     "solve_case",
     "solve_classical_sssa",
     "solve_newton_raphson",
+    "simulate_classical",
 ]

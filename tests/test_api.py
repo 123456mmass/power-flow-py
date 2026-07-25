@@ -21,8 +21,14 @@ def test_method_specific_default_iteration_budget() -> None:
 
 def test_unimplemented_active_analysis_fails_closed() -> None:
     with pytest.raises(PowerFlowError) as caught:
-        solve_case("ts", "ieee5")
+        solve_case("ibr", "ieee5")
     assert caught.value.code == "analysis_not_implemented"
+
+
+def test_unimplemented_detailed_default_fails_closed() -> None:
+    with pytest.raises(PowerFlowError) as caught:
+        solve_case("sssa", "padiyar_two_area")
+    assert caught.value.code == "default_model_not_implemented"
 
 
 def test_cli_emits_json(capsys: pytest.CaptureFixture[str]) -> None:
@@ -30,3 +36,13 @@ def test_cli_emits_json(capsys: pytest.CaptureFixture[str]) -> None:
     payload = json.loads(capsys.readouterr().out)
     assert payload["converged"] is True
     assert payload["reason"] == "converged"
+
+
+def test_cli_emits_ts_json(capsys: pytest.CaptureFixture[str]) -> None:
+    assert main([
+        "--analysis", "ts", "--case", "case9", "--model", "classical",
+        "--t-end", "0.02", "--dt", "0.01", "--t-fault", "99", "--t-clear", "99.1",
+    ]) == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["analysis"] == "ts"
+    assert payload["steps"] == 2

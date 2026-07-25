@@ -16,3 +16,6 @@ the packaged static catalog; it does not export a solved state. `export_pf_catal
 separately creates the verification-only differential fixture for all 14 cases.
 `export_sssa_classical_oracle.m` freezes matrices, machine parameters, spectra,
 and classifications for the classical SSSA route.
+`export_ts_classical_oracle.m` freezes short fault trajectories for all three
+fixed-step classical integrators. The clear-time recorder discrepancy is documented
+in the numerical contract and asserted explicitly by the Python differential test.

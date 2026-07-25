@@ -22,6 +22,16 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--acceleration", type=float, default=1.4)
     parser.add_argument("--no-q-limits", action="store_true")
+    parser.add_argument("--model", choices=("classical",))
+    parser.add_argument("--t-end", type=float, default=1.0)
+    parser.add_argument("--dt", type=float, default=0.01)
+    parser.add_argument("--fault-bus", type=int)
+    parser.add_argument("--t-fault", type=float, default=0.5)
+    parser.add_argument("--t-clear", type=float, default=0.6)
+    parser.add_argument(
+        "--integrator", default="trapezoidal",
+        choices=("trapezoidal", "rk4", "backward_euler"),
+    )
     parser.add_argument("--indent", type=int, default=2)
     return parser
 
@@ -38,8 +48,20 @@ def main(argv: list[str] | None = None) -> int:
             }
             if args.max_iter is not None:
                 options["max_iter"] = args.max_iter
+        elif args.analysis == "sssa":
+            options = {}
+            if args.model is not None:
+                options["model"] = args.model
+        elif args.analysis == "ts":
+            options = {
+                "t_end": args.t_end, "dt": args.dt, "fault_bus": args.fault_bus,
+                "t_fault": args.t_fault,
+                "t_clear": args.t_clear, "integrator": args.integrator,
+            }
+            if args.model is not None:
+                options["model"] = args.model
         else:
-            options = {"model": "classical"} if args.analysis == "sssa" else {}
+            options = {}
         result = solve_case(
             args.analysis,
             args.case,

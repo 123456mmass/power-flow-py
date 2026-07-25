@@ -41,3 +41,18 @@ MATLAB is a behavioral oracle, not mathematical authority. If its behavior confl
 - COI reduction removes the common angle and speed modes using inertia weights.
 - Reduced roots are classified with real-part tolerance `1e-7` as unstable,
   stable, or marginal.
+
+## Classical transient simulation
+
+- Differential state order is `[delta(1..ng), omega(1..ng)]` in source
+  generator-bus row order.
+- The linear network solve uses the same internal voltage, transient reactance,
+  and constant-admittance load model as classical SSSA.
+- Fixed-step integrators are implicit trapezoidal, classical RK4, and backward
+  Euler. RK4 is diagnostic because it has a bounded stability region.
+- Fault topology is `Yfault = Ypre + e_f e_f' / Zf`.
+- A step arriving at an event uses the left topology. The public sample at the
+  event is reconstructed with the right topology; differential state is continuous.
+- The MATLAB fixed-step recorder has a characterized floating-comparison defect
+  at `t_clear` that can publish the faulted left-limit V/Pe. Python follows the
+  declared right-limit event contract instead of reproducing that defect.

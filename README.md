@@ -13,11 +13,12 @@ The project implements its own numerical algorithms. NumPy and SciPy are used on
 - Phase-1 backward/forward sweep for radial PQ-only networks (fail-closed capability guard)
 - Shared PV reactive-limit switching and structured failure semantics
 - Classical multimachine SSSA with COI reduction and stability classification
+- Classical fixed-step TS with trapezoidal, RK4, and Backward-Euler integrators
 - CLI and Python API
 - Frozen and live MATLAB differential verification
 
-PF and classical SSSA are enabled. TS and IBR remain active planned surfaces and
-fail closed until their verified vertical slices land.
+PF, classical SSSA, and classical TS are enabled. Detailed EMF6/Padiyar routes
+and IBR remain active planned surfaces and fail closed until verified slices land.
 
 Active PF case IDs are `ieee5`, `ieee14`, `ieee300`, `rts24`,
 `padiyar_two_area`, `kundur_two_area`, `matpower14`, `case9`, `matpower30`,
@@ -30,6 +31,7 @@ python -m pip install -e ".[dev]"
 pytest
 power-flow --case ieee5 --method fdpf_xb --tolerance 1e-10 --max-iter 50
 power-flow --analysis sssa --case rts24
+power-flow --analysis ts --case matpower14 --model classical --integrator trapezoidal
 ```
 
 Python API:
