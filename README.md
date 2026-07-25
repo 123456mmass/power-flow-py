@@ -18,11 +18,13 @@ The project implements its own numerical algorithms. NumPy and SciPy are used on
 - Classical fixed-step TS with trapezoidal, RK4, and Backward-Euler integrators
 - Kundur EMF6 fixed-step trapezoidal TS with nonlinear algebraic network solves
 - Padiyar model-1.1 AVR/manual fixed-step trapezoidal TS
+- Reduced six-state GFL/GFM single-infinite-bus IBR PF/SSSA/TDS diagnostics
 - CLI and Python API
 - Frozen and live MATLAB differential verification
 
 PF, classical SSSA/TS, Kundur EMF6, and Padiyar model-1.1 SSSA/TS routes are
-enabled. IBR remains an active planned surface and fails closed.
+enabled. The first IBR vertical slice covers source-frozen reduced-six GFL/GFM
+SMIB diagnostics; other IBR cases remain active planned surfaces and fail closed.
 
 Active PF case IDs are `ieee5`, `ieee14`, `ieee300`, `rts24`,
 `padiyar_two_area`, `kundur_two_area`, `matpower14`, `case9`, `matpower30`,
@@ -38,6 +40,7 @@ power-flow --analysis sssa --case rts24
 power-flow --analysis ts --case matpower14 --model classical --integrator trapezoidal
 power-flow --analysis ts --case kundur --model emf6 --t-end 0.2 --dt 0.005
 power-flow --analysis ts --case padiyar_two_area --model padiyar_1_1_avr --t-end 0.2
+power-flow --analysis ibr --case gfl_reduced6_smib --ibr-product full --t-end 0.05
 ```
 
 Python API:

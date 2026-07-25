@@ -92,3 +92,22 @@ MATLAB is a behavioral oracle, not mathematical authority. If its behavior confl
   Corrector iteration is residual-adaptive (maximum 12 iterations by default),
   while each algebraic network solve uses project-owned damped Newton. Other
   Padiyar integrators currently fail closed.
+
+## Reduced-six IBR SMIB diagnostics
+
+- Case IDs `gfl_reduced6_smib` and `gfm_reduced6_smib` are source-frozen
+  `ASSUMED_DIAGNOSTIC` fixtures. They do not claim production readiness for
+  multi-bus IBR studies.
+- Both devices use six differential states and two algebraic terminal-voltage
+  components. Network KCL is `I_device - (V-V_inf)/Z_line = 0` with generator
+  injection convention `S=V*conj(I)`.
+- GFL state order is `[i_d, i_q, delta_PLL, xi_PLL, xi_P, xi_Q]`. The PLL PI
+  output is a rad/s deviation and is not multiplied by base angular frequency.
+- GFM state order is `[i_d, i_q, omega, delta, E, xi_V]`. It has no PLL; angle
+  comes only from the virtual swing equation. The voltage loop retains the
+  source cross-pairing between dq voltage errors and current references.
+- SSSA uses absolute central differences at `1e-6` and algebraic Schur
+  elimination. TDS solves the complete eight-variable implicit-trapezoidal
+  endpoint residual by project-owned Newton at every step.
+- Products `pf`, `sssa`, `ts`, and `full` are explicit. Unported IBR case IDs
+  raise `ibr_case_not_implemented`; no model substitution or fallback occurs.

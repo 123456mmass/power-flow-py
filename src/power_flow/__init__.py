@@ -11,6 +11,7 @@ from power_flow.contracts import (
     PowerFlowResult,
 )
 from power_flow.pf import solve_newton_raphson
+from power_flow.ibr import IbrOptions, IbrResult, solve_reduced6_smib
 from power_flow.sssa import (
     Emf6Options, Emf6SssaResult, PadiyarOptions, PadiyarSssaResult,
     solve_classical_sssa, solve_emf6_sssa, solve_padiyar_sssa,
@@ -30,6 +31,8 @@ __all__ = [
     "PowerFlowError",
     "PowerFlowOptions",
     "PowerFlowResult",
+    "IbrOptions",
+    "IbrResult",
     "SssaOptions",
     "SssaResult",
     "Emf6Options",
@@ -50,6 +53,7 @@ __all__ = [
     "solve_emf6_sssa",
     "solve_padiyar_sssa",
     "solve_newton_raphson",
+    "solve_reduced6_smib",
     "simulate_classical",
     "simulate_emf6",
     "simulate_padiyar",

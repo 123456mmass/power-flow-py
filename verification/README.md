@@ -26,3 +26,6 @@ freezes a short fault/clear trajectory and event-boundary evidence for the same 
 sets, matrices, and physical spectra (gauge roots are checked structurally).
 `export_ts_padiyar_oracle.m` freezes the AVR fault/clear state, voltage, power,
 corrector, and algebraic-residual trajectories.
+`export_ibr_reduced6_oracle.m` freezes both source-frozen reduced-six SMIB
+devices: equilibrium/KCL, DAE blocks, Schur matrices, spectra, and coupled
+implicit-trapezoidal equilibrium/perturbation trajectories.

@@ -19,10 +19,10 @@ def test_method_specific_default_iteration_budget() -> None:
     assert result.iterations == 25
 
 
-def test_unimplemented_active_analysis_fails_closed() -> None:
+def test_unimplemented_ibr_case_fails_closed() -> None:
     with pytest.raises(PowerFlowError) as caught:
         solve_case("ibr", "ieee5")
-    assert caught.value.code == "analysis_not_implemented"
+    assert caught.value.code == "ibr_case_not_implemented"
 
 
 def test_detailed_padiyar_default_is_operational() -> None:
@@ -44,4 +44,15 @@ def test_cli_emits_ts_json(capsys: pytest.CaptureFixture[str]) -> None:
     ]) == 0
     payload = json.loads(capsys.readouterr().out)
     assert payload["analysis"] == "ts"
+    assert payload["steps"] == 2
+
+
+def test_cli_emits_ibr_json(capsys: pytest.CaptureFixture[str]) -> None:
+    assert main([
+        "--analysis", "ibr", "--case", "gfl_reduced6_smib",
+        "--ibr-product", "full", "--t-end", "0.002", "--dt", "0.001",
+    ]) == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["analysis"] == "ibr"
+    assert payload["converged"] is True
     assert payload["steps"] == 2

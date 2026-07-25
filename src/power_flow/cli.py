@@ -26,6 +26,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--t-end", type=float, default=1.0)
     parser.add_argument("--dt", type=float, default=0.01)
     parser.add_argument("--fault-bus", type=int)
+    parser.add_argument("--ibr-product", default="full", choices=("pf", "sssa", "ts", "full"))
     parser.add_argument("--t-fault", type=float, default=0.5)
     parser.add_argument("--t-clear", type=float, default=0.6)
     parser.add_argument(
@@ -61,7 +62,7 @@ def main(argv: list[str] | None = None) -> int:
             if args.model is not None:
                 options["model"] = args.model
         else:
-            options = {}
+            options = {"ibr_analysis": args.ibr_product, "t_end": args.t_end, "dt": args.dt}
         result = solve_case(
             args.analysis,
             args.case,
