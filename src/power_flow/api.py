@@ -14,10 +14,11 @@ from power_flow.pf import (
     solve_gauss_seidel,
     solve_newton_raphson,
 )
-from power_flow.sssa import solve_classical_sssa, solve_emf6_sssa
+from power_flow.sssa import solve_classical_sssa, solve_emf6_sssa, solve_padiyar_sssa
 from power_flow.sssa.classical import SssaResult
 from power_flow.sssa.emf6 import Emf6SssaResult
-from power_flow.ts import Emf6TsResult, TsResult, simulate_classical, simulate_emf6
+from power_flow.sssa.padiyar import PadiyarSssaResult
+from power_flow.ts import Emf6TsResult, PadiyarTsResult, TsResult, simulate_classical, simulate_emf6, simulate_padiyar
 
 
 ACTIVE_ANALYSES = ("pf", "sssa", "ts", "ibr")
@@ -34,7 +35,7 @@ def solve_case(
     analysis: str,
     case: str,
     options: Mapping[str, Any] | None = None,
-) -> PowerFlowResult | SssaResult | Emf6SssaResult | TsResult | Emf6TsResult:
+) -> PowerFlowResult | SssaResult | Emf6SssaResult | PadiyarSssaResult | TsResult | Emf6TsResult | PadiyarTsResult:
     analysis_id = analysis.strip().lower()
     if analysis_id not in ACTIVE_ANALYSES:
         raise PowerFlowError(
@@ -52,6 +53,8 @@ def solve_case(
         requested_model = str((options or {}).get("model", default_model or "classical")).lower()
         if requested_model == "emf6":
             return solve_emf6_sssa(power_case, options)
+        if requested_model in {"padiyar_1_1_avr", "padiyar_1_1_manual"}:
+            return solve_padiyar_sssa(power_case, options)
         if default_model and requested_model != "classical":
             raise PowerFlowError(
                 "default_model_not_implemented",
@@ -64,6 +67,8 @@ def solve_case(
         requested_model = str((options or {}).get("model", default_model or "classical")).lower()
         if requested_model == "emf6":
             return simulate_emf6(power_case, options)
+        if requested_model in {"padiyar_1_1_avr", "padiyar_1_1_manual"}:
+            return simulate_padiyar(power_case, options)
         if default_model and requested_model != "classical":
             raise PowerFlowError(
                 "default_model_not_implemented",

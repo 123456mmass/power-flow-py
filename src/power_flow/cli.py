@@ -22,7 +22,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--acceleration", type=float, default=1.4)
     parser.add_argument("--no-q-limits", action="store_true")
-    parser.add_argument("--model", choices=("classical", "emf6"))
+    parser.add_argument("--model", choices=("classical", "emf6", "padiyar_1_1_avr", "padiyar_1_1_manual"))
     parser.add_argument("--t-end", type=float, default=1.0)
     parser.add_argument("--dt", type=float, default=0.01)
     parser.add_argument("--fault-bus", type=int)

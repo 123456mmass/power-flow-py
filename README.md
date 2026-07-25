@@ -14,13 +14,15 @@ The project implements its own numerical algorithms. NumPy and SciPy are used on
 - Shared PV reactive-limit switching and structured failure semantics
 - Classical multimachine SSSA with COI reduction and stability classification
 - Operational sixth-order EMF (`EMF6`) DAE SSSA for the Kundur default route
+- Padiyar model-1.1 AVR/manual DAE SSSA for the two-area default route
 - Classical fixed-step TS with trapezoidal, RK4, and Backward-Euler integrators
 - Kundur EMF6 fixed-step trapezoidal TS with nonlinear algebraic network solves
+- Padiyar model-1.1 AVR/manual fixed-step trapezoidal TS
 - CLI and Python API
 - Frozen and live MATLAB differential verification
 
-PF, classical SSSA/TS, and the Kundur EMF6 SSSA/TS default routes are enabled.
-The detailed Padiyar routes and IBR remain active planned surfaces and fail closed.
+PF, classical SSSA/TS, Kundur EMF6, and Padiyar model-1.1 SSSA/TS routes are
+enabled. IBR remains an active planned surface and fails closed.
 
 Active PF case IDs are `ieee5`, `ieee14`, `ieee300`, `rts24`,
 `padiyar_two_area`, `kundur_two_area`, `matpower14`, `case9`, `matpower30`,
@@ -35,6 +37,7 @@ power-flow --case ieee5 --method fdpf_xb --tolerance 1e-10 --max-iter 50
 power-flow --analysis sssa --case rts24
 power-flow --analysis ts --case matpower14 --model classical --integrator trapezoidal
 power-flow --analysis ts --case kundur --model emf6 --t-end 0.2 --dt 0.005
+power-flow --analysis ts --case padiyar_two_area --model padiyar_1_1_avr --t-end 0.2
 ```
 
 Python API:

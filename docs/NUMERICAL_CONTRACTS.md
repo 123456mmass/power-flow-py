@@ -74,3 +74,21 @@ MATLAB is a behavioral oracle, not mathematical authority. If its behavior confl
 - A differential step uses the topology at its left endpoint. At a fault or
   clear boundary the algebraic voltage and electrical power sample is solved
   with the right-side topology while the differential state remains continuous.
+
+## Padiyar model-1.1 stability model
+
+- The AVR per-machine state order is
+  `[delta, omega_absolute, Eqp, Edp, Efd]`; manual excitation omits `Efd` and
+  holds the initialized field voltage constant. Algebraic voltage remains
+  interleaved real/imaginary by source bus-row order.
+- Loads are converted to constant impedances at the solved operating point.
+  The machine uses the two-axis transient equations and Kundur-book dq/network
+  current convention; no subtransient states or inferred parameters are added.
+- The AVR equation is `(KA*(Vref-|V|)-Efd)/TA`. SSSA uses an absolute central
+  difference step of `1e-6` and the full Schur-complement matrix. Its two gauge
+  roots are retained rather than removed by COI projection, matching the active
+  MATLAB route.
+- Padiyar TS uses a fixed time grid with implicit trapezoidal predictor/corrector.
+  Corrector iteration is residual-adaptive (maximum 12 iterations by default),
+  while each algebraic network solve uses project-owned damped Newton. Other
+  Padiyar integrators currently fail closed.

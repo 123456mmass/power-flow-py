@@ -25,10 +25,9 @@ def test_unimplemented_active_analysis_fails_closed() -> None:
     assert caught.value.code == "analysis_not_implemented"
 
 
-def test_unimplemented_detailed_default_fails_closed() -> None:
-    with pytest.raises(PowerFlowError) as caught:
-        solve_case("sssa", "padiyar_two_area")
-    assert caught.value.code == "default_model_not_implemented"
+def test_detailed_padiyar_default_is_operational() -> None:
+    result = solve_case("sssa", "padiyar_two_area")
+    assert result.model == "padiyar_1_1_avr"
 
 
 def test_cli_emits_json(capsys: pytest.CaptureFixture[str]) -> None:

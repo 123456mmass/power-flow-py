@@ -22,3 +22,7 @@ in the numerical contract and asserted explicitly by the Python differential tes
 `export_sssa_emf6_oracle.m` freezes the Kundur EMF6 equilibrium, DAE Jacobian
 blocks, Schur-complement matrices, and reduced spectrum. `export_ts_emf6_oracle.m`
 freezes a short fault/clear trajectory and event-boundary evidence for the same DAE.
+`export_sssa_padiyar_oracle.m` freezes both AVR and manual model-1.1 equation
+sets, matrices, and physical spectra (gauge roots are checked structurally).
+`export_ts_padiyar_oracle.m` freezes the AVR fault/clear state, voltage, power,
+corrector, and algebraic-residual trajectories.
