@@ -8,8 +8,9 @@ from typing import Any
 from power_flow.cases import load_case
 from power_flow.contracts import PowerFlowError, PowerFlowOptions, PowerFlowResult
 from power_flow.ibr import (
-    IbrResult, LoadedIbrResult, TwoIbrSwitchResult, solve_loaded_smib_sweep,
-    solve_reduced6_smib, solve_two_ibr_switch,
+    IbrResult, LoadedIbrResult, TwoIbrSwitchResult, Ieee14SwitchResult,
+    solve_loaded_smib_sweep, solve_reduced6_smib, solve_two_ibr_switch,
+    solve_ieee14_switch,
 )
 from power_flow.pf import (
     solve_bfs,
@@ -39,7 +40,7 @@ def solve_case(
     analysis: str,
     case: str,
     options: Mapping[str, Any] | None = None,
-) -> PowerFlowResult | SssaResult | Emf6SssaResult | PadiyarSssaResult | TsResult | Emf6TsResult | PadiyarTsResult | IbrResult | LoadedIbrResult | TwoIbrSwitchResult:
+) -> PowerFlowResult | SssaResult | Emf6SssaResult | PadiyarSssaResult | TsResult | Emf6TsResult | PadiyarTsResult | IbrResult | LoadedIbrResult | TwoIbrSwitchResult | Ieee14SwitchResult:
     analysis_id = analysis.strip().lower()
     if analysis_id not in ACTIVE_ANALYSES:
         raise PowerFlowError(
@@ -52,6 +53,8 @@ def solve_case(
             f"Analysis {analysis_id!r} is active in the source baseline but not implemented yet.",
         )
     if analysis_id == "ibr":
+        if case.strip().lower() in {"ieee14_switch", "ieee14_1sg_4ibr"}:
+            return solve_ieee14_switch(case, options)
         if case.strip().lower() == "two_ibr_switch":
             return solve_two_ibr_switch(case, options)
         if case.strip().lower() in {"gfl_rms10_loaded_smib", "gfm_no_pll_loaded_smib"}:

@@ -58,7 +58,7 @@ def test_ibr_product_stages_are_explicit():
 
 def test_unported_ibr_case_fails_closed():
     try:
-        solve_case("ibr", "ieee14_1sg_4ibr")
+        solve_case("ibr", "padiyar_switch")
     except PowerFlowError as error:
         assert error.code == "ibr_case_not_implemented"
     else:

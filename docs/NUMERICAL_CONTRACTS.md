@@ -172,7 +172,7 @@ MATLAB is a behavioral oracle, not mathematical authority. If its behavior confl
 ## Two-IBR AGSI++ switching diagnostic
 
 - `two_ibr_switch` connects two identical reduced-six converters to one PCC.
-  The symmetric numerical reduction uses one six-state trajectory with `2*I`
+- The symmetric numerical reduction uses one six-state trajectory with `2*I`
   in KCL while publishing separate device signals and transactions.
 - A smooth temporary weak-grid window scales line impedance and may step the
   infinite-bus phasor. Coupled implicit trapezoidal integration is followed by
@@ -180,3 +180,22 @@ MATLAB is a behavioral oracle, not mathematical authority. If its behavior confl
 - AGSI++ combines voltage, frequency, filtered RoCoF, active-power error, SCR,
   and frame-lock terms. Hysteresis commits current-continuous GFL/GFM state
   reinitialization; default operation produces one up/down transaction per device.
+
+## IEEE14 one-SG/four-IBR switching diagnostic
+
+- `ieee14_switch` uses the in-house tap-aware IEEE14 Newton power flow, folds
+  loads into the dynamic admittance, and replaces generator buses 2, 3, 6,
+  and 8 with switchable reduced-six IBRs.
+- The bus-1 synchronous generator is the four-state Padiyar model 1.1 with
+  manual constant-field excitation, Kodsi Gen1 parameters converted from its
+  615 MVA machine base, and primary droop. No AVR or PSS is substituted.
+- Converter states remain on their individual inverter bases; network current
+  injections and reported P/Q use the common 100 MVA system base. The 1.2 pu
+  current limit is applied only at the network-injection boundary.
+- The project-owned composite DAE has 28 differential and 28 algebraic states.
+  SSSA eliminates the network Jacobian by a Schur complement. TDS uses coupled
+  implicit trapezoidal integration, an SG trip/reclose transaction, and
+  index-driven bidirectional AGSI/AGSI++ transfers.
+- The default active MATLAB fixture is the numerical oracle. PF, eigenvalues,
+  trip/reclose transactions, selected trajectories, AGSI, P/Q, and voltage
+  minima are regression-gated; no packaged power-system library is involved.
