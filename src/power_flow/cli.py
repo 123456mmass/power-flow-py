@@ -72,7 +72,9 @@ def main(argv: list[str] | None = None) -> int:
             if args.model is not None:
                 options["model"] = args.model
         else:
-            if args.ibr_product == "sssa_load_sweep":
+            if args.case.strip().lower() == "two_ibr_switch":
+                options = {"ibr_analysis": args.ibr_product, "t_end": args.t_end, "dt": args.dt}
+            elif args.ibr_product == "sssa_load_sweep":
                 options = {"ibr_analysis": args.ibr_product}
                 if args.ibr_load_percentages is not None:
                     options["sssa_load_percentages"] = tuple(args.ibr_load_percentages)

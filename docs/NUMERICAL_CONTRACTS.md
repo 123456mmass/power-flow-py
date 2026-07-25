@@ -168,3 +168,15 @@ MATLAB is a behavioral oracle, not mathematical authority. If its behavior confl
   retained per point; a deterministic assignment supplies tracked ordering.
 - Percentages must be finite, nonnegative, unique, and strictly increasing.
   Invalid schedules, low-voltage states, or singular Newton/Schur systems fail closed.
+
+## Two-IBR AGSI++ switching diagnostic
+
+- `two_ibr_switch` connects two identical reduced-six converters to one PCC.
+  The symmetric numerical reduction uses one six-state trajectory with `2*I`
+  in KCL while publishing separate device signals and transactions.
+- A smooth temporary weak-grid window scales line impedance and may step the
+  infinite-bus phasor. Coupled implicit trapezoidal integration is followed by
+  a boundary supervisor decision.
+- AGSI++ combines voltage, frequency, filtered RoCoF, active-power error, SCR,
+  and frame-lock terms. Hysteresis commits current-continuous GFL/GFM state
+  reinitialization; default operation produces one up/down transaction per device.

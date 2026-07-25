@@ -13,7 +13,8 @@ from power_flow.contracts import (
 from power_flow.pf import solve_newton_raphson
 from power_flow.ibr import (
     IbrOptions, IbrResult, LoadedIbrOptions, LoadedIbrPoint, LoadedIbrResult,
-    solve_loaded_smib_sweep, solve_reduced6_smib,
+    TwoIbrSwitchOptions, TwoIbrSwitchResult, solve_loaded_smib_sweep,
+    solve_reduced6_smib, solve_two_ibr_switch,
 )
 from power_flow.sssa import (
     Emf6Options, Emf6SssaResult, PadiyarOptions, PadiyarSssaResult,
@@ -39,6 +40,8 @@ __all__ = [
     "LoadedIbrOptions",
     "LoadedIbrPoint",
     "LoadedIbrResult",
+    "TwoIbrSwitchOptions",
+    "TwoIbrSwitchResult",
     "SssaOptions",
     "SssaResult",
     "Emf6Options",
@@ -61,6 +64,7 @@ __all__ = [
     "solve_newton_raphson",
     "solve_reduced6_smib",
     "solve_loaded_smib_sweep",
+    "solve_two_ibr_switch",
     "simulate_classical",
     "simulate_emf6",
     "simulate_padiyar",

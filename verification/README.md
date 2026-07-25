@@ -37,3 +37,5 @@ spectrum, and nonlinear TDS evidence for the no-PLL/no-AVR/no-PSS Sakimoto VSM.
 infinite-bus voltage/phase-step trajectories for all five supported SMIB models.
 `export_ibr_loaded_sweep_oracle.m` freezes coupled equilibria, DAE blocks, Schur
 matrices, and spectra at five loaded-SMIB sweep points for GFL-RMS10 and GFM no-PLL.
+`export_ibr_two_switch_oracle.m` freezes default AGSI++ transactions and decimated
+two-device state, PCC, frequency, index, mode, and power trajectories.
