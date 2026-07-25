@@ -25,6 +25,6 @@ The source MATLAB baseline exposes four stable analysis IDs: `pf`, `sssa`, `ts`,
 | Analysis | Status |
 |---|---|
 | PF | 14-case catalog; NR, GS, FDPF-XB/BX; Phase-1 radial BFS capability-gated |
-| SSSA | Classical model on all 14 network cases; COI reduction and MATLAB parity |
-| TS | Classical fixed-step trapezoidal/BE production; RK4 diagnostic; fault events |
+| SSSA | Classical model on all 14 cases; Kundur operational EMF6 default; COI reduction and MATLAB parity |
+| TS | Classical fixed-step trapezoidal/BE production and RK4 diagnostic; Kundur EMF6 fixed trapezoidal; fault events |
 | IBR | Planned |

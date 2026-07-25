@@ -56,3 +56,21 @@ MATLAB is a behavioral oracle, not mathematical authority. If its behavior confl
 - The MATLAB fixed-step recorder has a characterized floating-comparison defect
   at `t_clear` that can publish the faulted left-limit V/Pe. Python follows the
   declared right-limit event contract instead of reproducing that defect.
+
+## Operational EMF6 stability model
+
+- The Kundur default SSSA and TS route shares one nonlinear DAE. Per-machine
+  state order is `[delta, omega_deviation, Eqp, Edp, Eqpp, Edpp]`; algebraic
+  state order is interleaved `[Re(V1), Im(V1), ...]`.
+- Machine/network conversion follows the Kundur-book dq convention. Loads use
+  `cc_p_cz_q` by default: constant-current active power and constant-impedance
+  reactive power at the solved operating voltage.
+- Equilibrium is initialized from the in-house Newton-Raphson PF and a damped
+  scalar Newton rotor-angle solve. SSSA forms all four DAE Jacobian blocks by
+  central differences and eliminates algebraic states by Schur complement.
+- The production EMF6 TS slice is fixed-step implicit trapezoidal with three
+  fixed Picard correctors and a project-owned damped-Newton algebraic solve.
+  Unsupported EMF6 integrators and adaptive corrector mode fail closed.
+- A differential step uses the topology at its left endpoint. At a fault or
+  clear boundary the algebraic voltage and electrical power sample is solved
+  with the right-side topology while the differential state remains continuous.

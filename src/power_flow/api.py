@@ -14,9 +14,10 @@ from power_flow.pf import (
     solve_gauss_seidel,
     solve_newton_raphson,
 )
-from power_flow.sssa import solve_classical_sssa
+from power_flow.sssa import solve_classical_sssa, solve_emf6_sssa
 from power_flow.sssa.classical import SssaResult
-from power_flow.ts import TsResult, simulate_classical
+from power_flow.sssa.emf6 import Emf6SssaResult
+from power_flow.ts import Emf6TsResult, TsResult, simulate_classical, simulate_emf6
 
 
 ACTIVE_ANALYSES = ("pf", "sssa", "ts", "ibr")
@@ -33,7 +34,7 @@ def solve_case(
     analysis: str,
     case: str,
     options: Mapping[str, Any] | None = None,
-) -> PowerFlowResult | SssaResult | TsResult:
+) -> PowerFlowResult | SssaResult | Emf6SssaResult | TsResult | Emf6TsResult:
     analysis_id = analysis.strip().lower()
     if analysis_id not in ACTIVE_ANALYSES:
         raise PowerFlowError(
@@ -48,7 +49,10 @@ def solve_case(
     power_case = load_case(case)
     if analysis_id == "sssa":
         default_model = DETAILED_MODEL_DEFAULTS.get((analysis_id, case.strip().lower()))
-        if default_model and (options is None or "model" not in options):
+        requested_model = str((options or {}).get("model", default_model or "classical")).lower()
+        if requested_model == "emf6":
+            return solve_emf6_sssa(power_case, options)
+        if default_model and requested_model != "classical":
             raise PowerFlowError(
                 "default_model_not_implemented",
                 f"The active default model {default_model!r} for this case is not implemented yet; "
@@ -57,7 +61,10 @@ def solve_case(
         return solve_classical_sssa(power_case, options)
     if analysis_id == "ts":
         default_model = DETAILED_MODEL_DEFAULTS.get((analysis_id, case.strip().lower()))
-        if default_model and (options is None or "model" not in options):
+        requested_model = str((options or {}).get("model", default_model or "classical")).lower()
+        if requested_model == "emf6":
+            return simulate_emf6(power_case, options)
+        if default_model and requested_model != "classical":
             raise PowerFlowError(
                 "default_model_not_implemented",
                 f"The active default model {default_model!r} for this case is not implemented yet; "

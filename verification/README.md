@@ -19,3 +19,6 @@ and classifications for the classical SSSA route.
 `export_ts_classical_oracle.m` freezes short fault trajectories for all three
 fixed-step classical integrators. The clear-time recorder discrepancy is documented
 in the numerical contract and asserted explicitly by the Python differential test.
+`export_sssa_emf6_oracle.m` freezes the Kundur EMF6 equilibrium, DAE Jacobian
+blocks, Schur-complement matrices, and reduced spectrum. `export_ts_emf6_oracle.m`
+freezes a short fault/clear trajectory and event-boundary evidence for the same DAE.
