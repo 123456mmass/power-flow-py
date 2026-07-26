@@ -96,9 +96,17 @@ class InMemoryRunService:
                 chunk={"seq":run.event_seq+1,"t":list(message["t"]),"values":deepcopy(message["values"])}
                 run.chunks.append(chunk);self._emit(run,{"type":"samples","runId":run.id,"chunk":chunk})
                 step=int(message.get("step",0));total=int(message.get("totalSteps",0));sim=float(chunk["t"][-1])
-                run.progress={"fraction":step/total if total else 0.0,"simTime":sim,"simEnd":None,
+                sim_end=float(run.request["config"].get("options",{}).get("t_end",sim))
+                run.progress={"fraction":step/total if total else 0.0,"simTime":sim,"simEnd":sim_end,
                               "step":step,"totalSteps":total or None,"elapsedMs":0,"etaMs":None,"stage":"Time-domain integration"}
                 self._emit(run,{"type":"progress","runId":run.id,"progress":deepcopy(run.progress)})
+            elif message.get("type")=="grid_event":
+                kind=str(message["kind"])
+                event={"id":f"live-grid-{len(run.sim_events)+1}","kind":kind,"t":float(message["t"]),
+                       "label":str(message["label"]),"detail":str(message["detail"]),"device":"SG 1",
+                       "severity":"fault" if kind=="trip" else "info"}
+                run.sim_events.append(event);self._emit(run,{"type":"event","runId":run.id,"event":event})
+                self._log(run,"warn" if kind=="trip" else "info",event["label"]+" — "+event["detail"],"switching")
             elif message.get("type")=="mode_switch":
                 event={"id":f"live-switch-{len(run.sim_events)+1}","kind":"mode_switch","t":float(message["t"]),
                        "label":f"IBR {message['bus']}: {message['from']} → {message['to']}",
@@ -136,8 +144,12 @@ class InMemoryRunService:
                 options.update({"stream_callback":self._live_callback(run),"cancel_check":lambda:run.cancel_requested,"stream_stride":10})
             result=solve_case(str(config["analysis"]),str(config["case"]),options)
             if run.cancel_requested:self._finish_cancelled(run);return
+            live_grid_events=[event for event in run.sim_events if event.get("kind") in {"trip","reclose"}]
             payload,signals=serialize_result(result,config);run.result=payload;run.signals=signals
-            run.sim_events=list(payload.get("events",[]));summary=result.summary() if hasattr(result,"summary") else {}
+            combined_events=list(payload.get("events",[]))+live_grid_events
+            combined_events.sort(key=lambda event:float(event.get("t",0.0)))
+            payload["events"]=combined_events;run.sim_events=combined_events
+            summary=result.summary() if hasattr(result,"summary") else {}
             run.iterations=summary.get("iterations");run.max_mismatch=summary.get("max_mismatch")
             chunks=[] if run.chunks else series_chunks(payload)
             for chunk in chunks:

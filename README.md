@@ -69,6 +69,20 @@ The service listens on `http://127.0.0.1:8000`. REST endpoints are under
 `/api`; each run exposes a resumable SSE stream at
 `/api/runs/{run_id}/stream?fromSeq=0`.
 
+Scientific web console (Next.js):
+
+```powershell
+cd web
+npm install
+npm run dev
+```
+
+The console reads `NEXT_PUBLIC_SOLVER_API_BASE` (default `/api`, which serves a
+bundled mock REST/SSE job layer for local development). See
+[web/README.md](web/README.md) and
+[web/docs/API_CONTRACT.md](web/docs/API_CONTRACT.md). No numerical algorithm
+runs in the browser.
+
 Python API:
 
 ```python

@@ -418,6 +418,10 @@ def _simulate(system: _System, opt: Any) -> tuple[Any,...]:
             raise PowerFlowError("run_cancelled","Run cancelled during time-domain integration.")
         t1=time[k+1]
         is_online = bool(t1 < opt.sg_trip_time or t1 >= opt.sg_reclose_time)
+        if is_online != previous_online and callable(stream_callback):
+            stream_callback({"type":"grid_event","kind":"reclose" if is_online else "trip","t":float(t1),
+                "label":"Synchronous generator reclosed" if is_online else "Synchronous generator tripped",
+                "detail":"SG 1 breaker closed after synchronism check." if is_online else "SG 1 breaker opened; network is inverter-dominated."})
         if is_online and not previous_online:
             voltage=y[k,0::2]+1j*y[k,1::2]
             state[k,:nsg]=system.sg.reinitialize(voltage[system.sg_position])

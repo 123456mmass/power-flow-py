@@ -38,7 +38,7 @@ def test_run_service_switching_result_publishes_signal_chunks():
     service=InMemoryRunService(max_workers=1)
     try:
         detail=service.submit({"config":{"analysis":"ibr","case":"ieee14_switch","options":{
-            "ibr_analysis":"ts","t_end":1.002,"dt":.002,"fault_on":0,"fault_clear":0,
+            "ibr_analysis":"ts","t_end":2.002,"dt":.002,"fault_on":0,"fault_clear":0,
             "fault_reactance":.1,"step_on":0,"step_dv":-.1,"step_dphase_deg":20,
             "sssa_load_percentages":[],
         }}})
@@ -50,6 +50,8 @@ def test_run_service_switching_result_publishes_signal_chunks():
         snapshot=service.snapshot(detail["id"])
         assert snapshot["chunks"]
         assert any(event["kind"]=="mode_switch" for event in done["events"])
+        assert any(event["kind"]=="trip" for event in done["events"])
+        assert done["progress"]["simEnd"]==pytest.approx(2.002)
         assert any(log["source"]=="switching" for log in snapshot["logs"])
     finally:service.close()
 
